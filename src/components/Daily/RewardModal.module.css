@@ -1,0 +1,144 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(13, 15, 20, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: overlayIn 0.2s ease;
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  width: 100%;
+  max-width: 320px;
+  animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.kicker {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--gold);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.simple {
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(212, 168, 83, 0.08), transparent),
+    var(--surface-raised);
+  border: 2px solid var(--card-rarity);
+  padding: 32px 16px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.big {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--card-rarity);
+}
+
+.sub {
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.card {
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  border: 2px solid var(--card-rarity);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.art {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--card-rarity) 35%, var(--surface)) 0%,
+    var(--bg-deep) 100%
+  );
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.initials {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--card-rarity);
+}
+
+.info {
+  padding: 16px;
+}
+
+.name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rarity {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--card-rarity);
+  margin-top: 4px;
+}
+
+.origin {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--gold);
+  line-height: 1.4;
+}
+
+.description {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}

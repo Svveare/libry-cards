@@ -1,0 +1,66 @@
+.empty {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px dashed rgba(139, 146, 152, 0.25);
+}
+
+.card {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  border: 2px solid var(--card-rarity);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.art {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--card-rarity) 35%, var(--surface)) 0%,
+    var(--surface) 100%
+  );
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.initials {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--card-rarity);
+  opacity: 0.9;
+}
+
+.info {
+  padding: 10px 12px;
+  background: var(--surface);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rarity {
+  font-size: 11px;
+  color: var(--card-rarity);
+  font-weight: 500;
+  margin-top: 2px;
+  display: block;
+}

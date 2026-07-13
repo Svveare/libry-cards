@@ -1,0 +1,94 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hero {
+  padding: 18px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse 80% 70% at 100% 0%, rgba(240, 208, 120, 0.14), transparent 55%),
+    var(--surface);
+  box-shadow: var(--shadow-shelf);
+}
+
+.kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  line-height: 1.15;
+}
+
+.text {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(135deg, rgba(212, 168, 83, 0.14), transparent);
+}
+
+.badgeLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.badgeValue {
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.badgeHint {
+  width: 100%;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.linkBox {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+
+.link {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

@@ -1,0 +1,299 @@
+{
+  "stands": [
+    {
+      "id": "permanent",
+      "name": "Постоянные",
+      "type": "permanent",
+      "order": 1,
+      "enabled": true,
+      "shelves": [
+        {
+          "id": "music",
+          "name": "Музыка",
+          "standId": "permanent",
+          "order": 1,
+          "enabled": true,
+          "books": [
+            {
+              "id": "ru-rap",
+              "name": "Русский реп",
+              "rarity": "legendary",
+              "shelfId": "music",
+              "order": 1,
+              "enabled": true,
+              "pages": [
+                {
+                  "id": "ru-rap-page-1",
+                  "number": 1,
+                  "rarity": "common",
+                  "cards": [
+                    {
+                      "id": "rr-toxi",
+                      "name": "Toxi$",
+                      "description": "",
+                      "rarity": "common",
+                      "slotIndex": 0,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-meybi-beybi",
+                      "name": "Мейби бейби",
+                      "description": "",
+                      "rarity": "common",
+                      "slotIndex": 1,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-dzhon-garik",
+                      "name": "Джон Гарик",
+                      "description": "",
+                      "rarity": "common",
+                      "slotIndex": 2,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-whole-lotta-swag",
+                      "name": "Whole Lotta Swag",
+                      "description": "",
+                      "rarity": "common",
+                      "slotIndex": 3,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    }
+                  ]
+                },
+                {
+                  "id": "ru-rap-page-2",
+                  "number": 2,
+                  "rarity": "rare",
+                  "cards": [
+                    {
+                      "id": "rr-macan",
+                      "name": "MACAN",
+                      "description": "",
+                      "rarity": "rare",
+                      "slotIndex": 0,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-eldzhey",
+                      "name": "Элджей",
+                      "description": "",
+                      "rarity": "rare",
+                      "slotIndex": 1,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-skriptonit",
+                      "name": "Скриптонит",
+                      "description": "",
+                      "rarity": "rare",
+                      "slotIndex": 2,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-big-baby-tape",
+                      "name": "Big Baby Tape",
+                      "description": "",
+                      "rarity": "rare",
+                      "slotIndex": 3,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    }
+                  ]
+                },
+                {
+                  "id": "ru-rap-page-3",
+                  "number": 3,
+                  "rarity": "epic",
+                  "cards": [
+                    {
+                      "id": "rr-temnyy-prints",
+                      "name": "Темный принц",
+                      "description": "",
+                      "rarity": "epic",
+                      "slotIndex": 0,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-madk1d",
+                      "name": "Madk1d",
+                      "description": "",
+                      "rarity": "epic",
+                      "slotIndex": 1,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-9mice",
+                      "name": "9mice",
+                      "description": "",
+                      "rarity": "epic",
+                      "slotIndex": 2,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-kai-angel",
+                      "name": "kai angel",
+                      "description": "",
+                      "rarity": "epic",
+                      "slotIndex": 3,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    }
+                  ]
+                },
+                {
+                  "id": "ru-rap-page-4",
+                  "number": 4,
+                  "rarity": "legendary",
+                  "cards": [
+                    {
+                      "id": "rr-lsp",
+                      "name": "ЛСП",
+                      "description": "",
+                      "rarity": "legendary",
+                      "slotIndex": 0,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-oxxxymiron",
+                      "name": "Oxxxymiron",
+                      "description": "",
+                      "rarity": "legendary",
+                      "slotIndex": 1,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-pharaoh",
+                      "name": "Pharaoh",
+                      "description": "",
+                      "rarity": "legendary",
+                      "slotIndex": 2,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-noize-mc",
+                      "name": "Noize MC",
+                      "description": "",
+                      "rarity": "legendary",
+                      "slotIndex": 3,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    }
+                  ]
+                },
+                {
+                  "id": "ru-rap-page-5",
+                  "number": 5,
+                  "rarity": "mythic",
+                  "cards": [
+                    {
+                      "id": "rr-basta",
+                      "name": "Баста",
+                      "description": "",
+                      "rarity": "mythic",
+                      "slotIndex": 0,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-guf",
+                      "name": "Гуф",
+                      "description": "",
+                      "rarity": "mythic",
+                      "slotIndex": 1,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-morgenshtern",
+                      "name": "MORGENSHTERN",
+                      "description": "",
+                      "rarity": "mythic",
+                      "slotIndex": 2,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-friendly-thug-52-ngg",
+                      "name": "Friendly Thug 52 NGG",
+                      "description": "",
+                      "rarity": "mythic",
+                      "slotIndex": 3,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seasonal",
+      "name": "Сезонные",
+      "type": "seasonal",
+      "order": 2,
+      "enabled": true,
+      "shelves": []
+    },
+    {
+      "id": "collab",
+      "name": "Коллаборации",
+      "type": "collab",
+      "order": 3,
+      "enabled": true,
+      "shelves": []
+    },
+    {
+      "id": "event",
+      "name": "События",
+      "type": "event",
+      "order": 4,
+      "enabled": true,
+      "shelves": []
+    },
+    {
+      "id": "collectible",
+      "name": "Коллекционные",
+      "type": "collectible",
+      "order": 5,
+      "enabled": true,
+      "shelves": []
+    }
+  ]
+}

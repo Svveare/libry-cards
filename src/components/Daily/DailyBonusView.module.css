@@ -1,0 +1,12 @@
+.wrap {
+  min-height: 0;
+}
+
+.lead {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-soft);
+  text-align: center;
+}

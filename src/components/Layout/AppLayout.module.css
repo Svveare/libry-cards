@@ -1,0 +1,30 @@
+.layout {
+  position: relative;
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -5%, rgba(240, 200, 120, 0.12), transparent 55%),
+    linear-gradient(180deg, #141821 0%, var(--bg-deep) 75%);
+  overflow: hidden;
+}
+
+/* Static top glow — no continuous animation (weak phones). */
+.atmosphere {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  width: 280px;
+  height: 280px;
+  margin-left: -140px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, rgba(242, 212, 138, 0.16) 0%, transparent 70%);
+}
+
+.main {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 14px 18px 40px;
+  min-height: 100%;
+}

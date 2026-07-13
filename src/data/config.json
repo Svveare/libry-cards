@@ -1,0 +1,140 @@
+{
+  "telegramChannel": {
+    "username": "@librycards",
+    "requiredForDaily": true,
+    "requiredForChest": true,
+    "enabled": true
+  },
+  "telegramBotUsername": "librycards_bot",
+  "daily": {
+    "cooldownHours": 24,
+    "unlimitedOpens": false,
+    "moneyTiers": [
+      { "amount": 10, "weight": 55 },
+      { "amount": 25, "weight": 35 },
+      { "amount": 50, "weight": 10 }
+    ]
+  },
+  "chest": {
+    "cooldownHours": 48,
+    "unlimitedOpens": false
+  },
+  "shop": {
+    "categories": [
+      {
+        "id": "chests",
+        "title": "Сундуки",
+        "hint": "Выбор из 4 карт"
+      },
+      {
+        "id": "cases",
+        "title": "Кейсы",
+        "hint": "Рулетка без монет"
+      },
+      {
+        "id": "guarantee",
+        "title": "Гарантия редкости",
+        "hint": "Точно нужная редкость"
+      },
+      {
+        "id": "books",
+        "title": "Книги",
+        "hint": "Карты с полки"
+      },
+      {
+        "id": "ink",
+        "title": "Чернила",
+        "hint": "Недостающие карты · раз в 2 дня"
+      }
+    ],
+    "items": [
+      {
+        "id": "chest_entry",
+        "categoryId": "chests",
+        "title": "Сундук",
+        "description": "Каждые 48 ч · нужна подписка на канал · дубли → чернила",
+        "price": 0,
+        "action": "open_chest_free"
+      },
+      {
+        "id": "chest_now",
+        "categoryId": "chests",
+        "title": "Сбросить ожидание",
+        "description": "Сразу доступен бесплатный сундук",
+        "price": 75,
+        "action": "reset_chest"
+      },
+      {
+        "id": "chest_plus",
+        "categoryId": "chests",
+        "title": "Сундук+",
+        "description": "Выше шансы · без монет в пуле",
+        "price": 150,
+        "action": "open_chest_plus"
+      },
+      {
+        "id": "case_soft",
+        "categoryId": "cases",
+        "title": "Кейс Soft",
+        "description": "Лёгкая рулетка",
+        "price": 75,
+        "action": "case_soft"
+      },
+      {
+        "id": "case_mid",
+        "categoryId": "cases",
+        "title": "Кейс Mid",
+        "description": "Больше редких",
+        "price": 100,
+        "action": "case_mid"
+      },
+      {
+        "id": "case_hot",
+        "categoryId": "cases",
+        "title": "Кейс Hot",
+        "description": "Жирный шанс на легенду",
+        "price": 150,
+        "action": "case_hot"
+      },
+      {
+        "id": "pack_rare",
+        "categoryId": "guarantee",
+        "title": "Случайная редкая",
+        "description": "Редкая или выше",
+        "price": 100,
+        "action": "pack_rare"
+      },
+      {
+        "id": "pack_epic",
+        "categoryId": "guarantee",
+        "title": "Случайная эпическая",
+        "description": "Эпическая или выше",
+        "price": 150,
+        "action": "pack_epic"
+      },
+      {
+        "id": "pack_legendary",
+        "categoryId": "guarantee",
+        "title": "Случайная легендарная",
+        "description": "Легендарная или выше",
+        "price": 200,
+        "action": "pack_legendary"
+      },
+      {
+        "id": "book_music",
+        "categoryId": "books",
+        "title": "Музыка",
+        "description": "Карта с полки Музыка · 1 токен или монеты",
+        "price": 120,
+        "action": "book_music"
+      }
+    ]
+  },
+  "defaults": {
+    "startingCoins": 50
+  },
+  "adminUserIds": ["1920121195"],
+  "dev": {
+    "grantAllCards": false
+  }
+}

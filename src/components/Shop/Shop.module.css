@@ -1,0 +1,120 @@
+.shop {
+  min-height: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lead {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+
+.detail {
+  margin-bottom: 20px;
+  padding: 18px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse 70% 80% at 0% 0%, rgba(240, 208, 120, 0.1), transparent 55%),
+    var(--surface);
+  box-shadow: var(--shadow-shelf);
+}
+
+.detailTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  line-height: 1.15;
+}
+
+.detailDesc {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+
+.detailPrice {
+  margin: 14px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.caseBlock {
+  margin-bottom: 16px;
+}
+
+.caseHint {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.emptyInk {
+  margin: 24px 0;
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+.inkGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.inkCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-rarity, var(--border));
+  background: var(--surface);
+  box-shadow: var(--shadow-shelf);
+}
+
+.inkInitials {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--card-rarity, var(--gold));
+}
+
+.inkName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.inkRarity {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.inkPrice {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #9dd0e8;
+}
+

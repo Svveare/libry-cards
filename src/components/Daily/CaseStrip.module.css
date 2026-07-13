@@ -1,0 +1,93 @@
+.wrap {
+  position: relative;
+  margin: 0 auto 20px;
+  max-width: 100%;
+}
+
+.marker {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  z-index: 2;
+  width: 14px;
+  height: calc(100% + 14px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.marker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 18px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 2px 8px rgba(212, 168, 83, 0.35);
+}
+
+.marker::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: 2px;
+  height: calc(100% - 18px);
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--gold), transparent);
+}
+
+.viewport {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-deep);
+  height: 100px;
+  contain: paint;
+}
+
+.track {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  padding: 10px 8px;
+}
+
+.trackSpinning {
+  will-change: transform;
+}
+
+.trackDone {
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none !important;
+  }
+}
+
+.item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--item-color);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.itemLabel {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--item-color);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
