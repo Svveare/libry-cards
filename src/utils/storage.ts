@@ -3,7 +3,7 @@ import { config, getAllCards } from '../content/loader';
 
 const STORAGE_PREFIX = 'libry_progress_v8_';
 /** Bump this to force a full client reset for all users. */
-const WIPE_FLAG = 'libry_wiped_deploy_v1';
+const WIPE_FLAG = 'libry_wiped_deploy_v2';
 
 function defaultProgress(): UserProgress {
   return {

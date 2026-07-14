@@ -51,6 +51,14 @@ export interface Card {
   image?: string;
 }
 
+/** Bothost admin overrides applied on bootstrap. */
+export type CardOverride = {
+  name?: string;
+  description?: string;
+  image?: string;
+  rarity?: string;
+};
+
 export interface Page {
   id: string;
   number: number;

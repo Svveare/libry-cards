@@ -1,41 +1,49 @@
 # Libry Cards bot (Bothost)
 
-Маленький бот + HTTP API для рефералов и админ-грантов.
+Маленький бот + HTTP API для рефералов, админ-грантов, **общих картинок карт** и **синка прогресса**.
 
 ## Env (Bothost)
 
 | Переменная | Пример | Описание |
 |------------|--------|----------|
 | `BOT_TOKEN` | от BotFather | обязателен |
-| `WEBAPP_URL` | `https://libry-cards-xxx.vercel.app` | URL Mini App на Vercel |
+| `WEBAPP_URL` | `https://libry-cards.vercel.app` | URL Mini App на Vercel |
+| `PUBLIC_BASE` | `https://bot-….bothost.tech` | публичный HTTPS этого бота (картинки) |
 | `ADMIN_IDS` | `1920121195` | через запятую |
 | `REFERRAL_BONUS` | `25` | монеты приглашённому |
-| `PORT` | `3000` | должен совпадать с портом веб-приложения Bothost |
+| `PORT` | `3000` | порт HTTP (совпадает с «Порт веб-приложения») |
 | `DATA_PATH` | `data/store.json` | файл хранилища |
+| `CARDS_DIR` | `data/cards` | файлы картинок |
+
+**Важно:** добавь `PUBLIC_BASE` = твой домен Bothost без `/` в конце.
+
+После `git pull` на Bothost сделай **Restart** бота.
 
 ## Старт
 
 ```bash
-cd bot
 pip install -r requirements.txt
 python main.py
 ```
 
-Бот: long polling. API на том же порту:
+(или entry `bot/main.py` из корня репо)
+
+API:
 
 - `GET /api/health`
-- `POST /api/bootstrap` `{ "initData", "startParam?" }`
-- `POST /api/claim` `{ "initData", "claimId" }`
-- `POST /api/admin/grant` `{ "initData", "targetUserId", "coins", "bonusCases" }`
+- `GET /media/cards/{file}` — картинки
+- `POST /api/bootstrap` — рефералы, pending, `cardOverrides`, `progress`
+- `POST /api/claim`
+- `POST /api/progress` — синк прогресса аккаунта
+- `POST /api/admin/grant`
+- `POST /api/admin/card` — поля карты + `imageBase64` (лимит ~300 KB)
 
-В Mini App `config.backendBaseUrl` = публичный HTTPS Bothost (например `https://your-bot.bothost.ru`).
+В Mini App `config.backendBaseUrl` = тот же HTTPS, что `PUBLIC_BASE`.
 
 ## Команды
 
-- `/start` — кнопка Web App
-- `/start ref_123` — реферал от пользователя 123
-- `/give <id> coins 100` — админ
-- `/give <id> cases 2` — админ (бонус-открытия ежедневки)
+- `/start` / `/start ref_123`
+- `/give <id> coins|cases N`
 
 ## Ссылка приглашения
 

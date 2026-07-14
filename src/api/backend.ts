@@ -1,4 +1,7 @@
 import { config } from '../content/loader';
+import type { CardOverride, UserProgress } from '../types';
+
+export type { CardOverride };
 
 export interface BootstrapResult {
   userId: string;
@@ -8,6 +11,8 @@ export interface BootstrapResult {
   claimId: string | null;
   isAdmin: boolean;
   referredBy?: string | null;
+  cardOverrides?: Record<string, CardOverride>;
+  progress?: UserProgress | null;
 }
 
 function baseUrl(): string {
@@ -58,6 +63,17 @@ export async function claimBootstrap(
   return Boolean(res?.ok);
 }
 
+export async function pushProgress(
+  initData: string,
+  progress: UserProgress,
+): Promise<boolean> {
+  const res = await postJson<{ ok?: boolean }>('/api/progress', {
+    initData,
+    progress,
+  });
+  return Boolean(res?.ok);
+}
+
 export async function adminGrant(
   initData: string,
   targetUserId: string,
@@ -77,6 +93,40 @@ export async function adminGrant(
       return { ok: false, error: (err as { error?: string }).error ?? 'ошибка' };
     }
     return { ok: true };
+  } catch {
+    return { ok: false, error: 'сеть' };
+  }
+}
+
+export async function adminSaveCard(
+  initData: string,
+  payload: {
+    cardId: string;
+    name?: string;
+    description?: string;
+    rarity?: string;
+    image?: string;
+    imageBase64?: string;
+    mime?: string;
+  },
+): Promise<{ ok: boolean; image?: string; error?: string }> {
+  const root = baseUrl();
+  if (!root) return { ok: false, error: 'backend не настроен' };
+  try {
+    const res = await fetch(`${root}/api/admin/card`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData, ...payload }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+      override?: { image?: string };
+    };
+    if (!res.ok) {
+      return { ok: false, error: data.error ?? 'ошибка' };
+    }
+    return { ok: true, image: data.override?.image };
   } catch {
     return { ok: false, error: 'сеть' };
   }

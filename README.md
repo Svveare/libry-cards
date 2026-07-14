@@ -57,26 +57,24 @@ curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
 
 Админ: вкладка **Выдача** в Mini App или `/give <id> coins|cases N`.
 
-## Контент
+## Картинки и один профиль на устройствах
 
-- `src/data/content.json` / `config.json`
-- Картинки: файл в `public/cards/` + `"image": "/cards/….webp"` (900×1200)
-- Баннер (если нужен): `public/bot/welcome-banner.jpg`
-- Админка пишет оверлей **только в браузер этого устройства** (localStorage)
+Прогресс и фото из админки живут на **Bothost** (не только в localStorage телефона/ПК).
 
-### Картинки с ПК на телефон
+1. На Bothost env: `PUBLIC_BASE=https://bot-1784027666-4590-svveare.bothost.tech`
+2. Restart бота после деплоя `bot/`
+3. Админка **из Telegram Mini App** → выбрать файл → сохранить → «Сохранено на сервере»
+4. Другое устройство: перезайди в Mini App — картинка и прогресс подтянутся с bootstrap
 
-Прогресс и правки админки **не синхронизируются** между устройствами. ПК в обычном браузере часто = профиль `guest`, телефон в Telegram = твой ID.
+ПК и телефон раньше выглядели как «два профиля», потому что у каждого устройства свой localStorage. Теперь источник истины — Bothost для одного Telegram ID.
 
-Чтобы фотка с ПК появилась на телефоне у всех:
+### Картинки с ПК на телефон (запасной путь без сервера)
 
-1. Админка в браузере → выбрать файл → сохранить
-2. Скачанный файл положить в `public/cards/name.webp`
-3. В карте путь `/cards/name.webp` (не data URL)
-4. «Скачать JSON» → заменить `src/data/content.json`
-5. Commit + push → дождаться Vercel → открыть Mini App на телефоне
+1. Файл в `public/cards/name.webp`
+2. В JSON путь `/cards/name.webp`
+3. Push → Vercel
 
-Яндекс.Диск / Google Drive не подойдут: ссылка ведёт на страницу, не на файл картинки.
+Яндекс.Диск / Google Drive не подойдут для прямых ссылок.
 
 ## Без backendBaseUrl
 

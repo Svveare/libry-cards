@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import hmac
 import json
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl
 
 from aiohttp import web
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import (
     InlineKeyboardButton,
@@ -31,25 +33,40 @@ ADMIN_IDS = {
 }
 REFERRAL_BONUS = int(os.environ.get("REFERRAL_BONUS", "25"))
 DATA_PATH = Path(os.environ.get("DATA_PATH", "data/store.json"))
+CARDS_DIR = Path(os.environ.get("CARDS_DIR", "data/cards"))
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", os.environ.get("BOTHOST_PORT", "3000")))
-PUBLIC_BASE = os.environ.get("PUBLIC_BASE", "").rstrip("/")  # https://xxx.bothost.ru
+PUBLIC_BASE = os.environ.get("PUBLIC_BASE", "").rstrip("/")
+MAX_IMAGE_BYTES = int(os.environ.get("MAX_IMAGE_BYTES", str(300 * 1024)))
 
 if not BOT_TOKEN:
     raise SystemExit("BOT_TOKEN is required")
 
+CARD_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]{1,80}$")
+MIME_EXT = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+}
+
 
 def default_store() -> dict[str, Any]:
     return {
-        "referrals": {},  # invitee_id -> referrer_id
-        "referral_counts": {},  # referrer_id -> int
-        "pending": {},  # user_id -> {coins, bonusCases, claimedLocalReferral}
-        "grants": [],  # list of {id, userId, coins, bonusCases, claimed}
+        "referrals": {},
+        "referral_counts": {},
+        "pending": {},
+        "grants": [],
+        "open_claims": {},
+        "card_overrides": {},
+        "progress": {},
     }
 
 
 def load_store() -> dict[str, Any]:
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CARDS_DIR.mkdir(parents=True, exist_ok=True)
     if not DATA_PATH.exists():
         data = default_store()
         save_store(data)
@@ -58,6 +75,9 @@ def load_store() -> dict[str, Any]:
         raw = json.load(f)
     base = default_store()
     base.update(raw)
+    base.setdefault("card_overrides", {})
+    base.setdefault("progress", {})
+    base.setdefault("open_claims", {})
     return base
 
 
@@ -117,6 +137,14 @@ def validate_init_data(init_data: str) -> dict[str, Any] | None:
     except json.JSONDecodeError:
         return None
     return {"user": user, "start_param": parsed.get("start_param")}
+
+
+def public_base_from(request: web.Request) -> str:
+    if PUBLIC_BASE:
+        return PUBLIC_BASE
+    proto = request.headers.get("X-Forwarded-Proto") or request.scheme or "https"
+    host = request.headers.get("X-Forwarded-Host") or request.host
+    return f"{proto}://{host}".rstrip("/")
 
 
 def webapp_keyboard() -> InlineKeyboardMarkup:
@@ -211,16 +239,12 @@ async def api_bootstrap(request: web.Request) -> web.Response:
     user_id = str(user.get("id", ""))
     start_param = body.get("startParam") or parsed.get("start_param") or ""
 
-    # Fallback: register referral from Mini App start_param if bot /start missed
     if isinstance(start_param, str) and start_param.startswith("ref_"):
         register_referral(user_id, start_param[4:].strip())
 
     p = pending_for(user_id)
     coins = int(p.get("coins", 0))
     cases = int(p.get("bonusCases", 0))
-    # Consume pending into response; client applies then we clear on ack
-    # Explicit claim endpoint preferred — clear here after returning once:
-    # Use claimIds to avoid double-spend: move to "issued" token.
     claim_id = None
     if coins or cases:
         claim_id = f"{user_id}-{int(time.time())}-{coins}-{cases}"
@@ -234,6 +258,7 @@ async def api_bootstrap(request: web.Request) -> web.Response:
         save_store(STORE)
 
     count = int(STORE["referral_counts"].get(user_id, 0))
+    progress = STORE.get("progress", {}).get(user_id)
     return web.json_response(
         {
             "userId": user_id,
@@ -243,12 +268,13 @@ async def api_bootstrap(request: web.Request) -> web.Response:
             "claimId": claim_id,
             "isAdmin": user_id in ADMIN_IDS,
             "referredBy": STORE["referrals"].get(user_id),
+            "cardOverrides": STORE.get("card_overrides", {}),
+            "progress": progress,
         }
     )
 
 
 async def api_claim(request: web.Request) -> web.Response:
-    """Confirm client applied a bootstrap claim (idempotent)."""
     try:
         body = await request.json()
     except Exception:
@@ -263,6 +289,23 @@ async def api_claim(request: web.Request) -> web.Response:
     if not claim or claim.get("userId") != user_id:
         return web.json_response({"ok": True, "already": True})
     open_claims.pop(claim_id, None)
+    save_store(STORE)
+    return web.json_response({"ok": True})
+
+
+async def api_progress(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    parsed = validate_init_data(body.get("initData") or "")
+    if not parsed:
+        return web.json_response({"error": "unauthorized"}, status=401)
+    user_id = str(parsed["user"].get("id", ""))
+    progress = body.get("progress")
+    if not isinstance(progress, dict):
+        return web.json_response({"error": "bad progress"}, status=400)
+    STORE.setdefault("progress", {})[user_id] = progress
     save_store(STORE)
     return web.json_response({"ok": True})
 
@@ -301,6 +344,102 @@ async def api_admin_grant(request: web.Request) -> web.Response:
     )
 
 
+async def api_admin_card(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    parsed = validate_init_data(body.get("initData") or "")
+    if not parsed:
+        return web.json_response({"error": "unauthorized"}, status=401)
+    admin_id = str(parsed["user"].get("id", ""))
+    if admin_id not in ADMIN_IDS:
+        return web.json_response({"error": "forbidden"}, status=403)
+
+    card_id = str(body.get("cardId") or "").strip()
+    if not CARD_ID_RE.match(card_id):
+        return web.json_response({"error": "bad cardId"}, status=400)
+
+    overrides = STORE.setdefault("card_overrides", {})
+    patch: dict[str, Any] = dict(overrides.get(card_id) or {})
+
+    if "name" in body and body["name"] is not None:
+        patch["name"] = str(body["name"])[:120]
+    if "description" in body and body["description"] is not None:
+        patch["description"] = str(body["description"])[:2000]
+    if "rarity" in body and body["rarity"] is not None:
+        patch["rarity"] = str(body["rarity"])[:32]
+
+    image_b64 = body.get("imageBase64")
+    if image_b64:
+        mime = str(body.get("mime") or "image/webp").lower().strip()
+        if mime not in MIME_EXT:
+            return web.json_response({"error": "bad mime"}, status=400)
+        raw_b64 = str(image_b64)
+        if "," in raw_b64 and raw_b64.startswith("data:"):
+            raw_b64 = raw_b64.split(",", 1)[1]
+        try:
+            data = base64.b64decode(raw_b64, validate=False)
+        except Exception:
+            return web.json_response({"error": "bad base64"}, status=400)
+        if len(data) > MAX_IMAGE_BYTES:
+            return web.json_response({"error": "image too large"}, status=400)
+        if len(data) < 32:
+            return web.json_response({"error": "image too small"}, status=400)
+
+        CARDS_DIR.mkdir(parents=True, exist_ok=True)
+        # Remove previous extensions for this card id
+        for old in CARDS_DIR.glob(f"{card_id}.*"):
+            try:
+                old.unlink()
+            except OSError:
+                pass
+        ext = MIME_EXT[mime]
+        filename = f"{card_id}.{ext}"
+        path = CARDS_DIR / filename
+        path.write_bytes(data)
+        base = public_base_from(request)
+        patch["image"] = f"{base}/media/cards/{filename}"
+
+    elif body.get("image") is not None:
+        img = str(body.get("image") or "").strip()
+        if img:
+            patch["image"] = img[:2000]
+        elif "image" in patch:
+            del patch["image"]
+
+    if not patch:
+        return web.json_response({"error": "empty patch"}, status=400)
+
+    overrides[card_id] = patch
+    save_store(STORE)
+    return web.json_response({"ok": True, "cardId": card_id, "override": patch})
+
+
+async def api_media_card(request: web.Request) -> web.Response:
+    name = request.match_info.get("filename", "")
+    if not name or "/" in name or "\\" in name or ".." in name:
+        return web.Response(status=400, text="bad name")
+    if not re.match(r"^[a-zA-Z0-9_\-]+\.(webp|jpg|jpeg|png|gif)$", name, re.I):
+        return web.Response(status=400, text="bad name")
+    path = (CARDS_DIR / name).resolve()
+    try:
+        path.relative_to(CARDS_DIR.resolve())
+    except ValueError:
+        return web.Response(status=403, text="forbidden")
+    if not path.is_file():
+        return web.Response(status=404, text="not found")
+    ext = path.suffix.lower()
+    ctype = {
+        ".webp": "image/webp",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+    }.get(ext, "application/octet-stream")
+    return web.FileResponse(path, headers={"Content-Type": ctype, "Cache-Control": "public, max-age=86400"})
+
+
 def cors_middleware():
     @web.middleware
     async def middleware(request: web.Request, handler):
@@ -317,6 +456,7 @@ def cors_middleware():
 
 
 async def on_startup(app: web.Application) -> None:
+    CARDS_DIR.mkdir(parents=True, exist_ok=True)
     app["bot_task"] = asyncio.create_task(dp.start_polling(bot))
 
 
@@ -332,12 +472,18 @@ async def on_cleanup(app: web.Application) -> None:
 
 
 def create_app() -> web.Application:
-    app = web.Application(middlewares=[cors_middleware()])
+    app = web.Application(
+        middlewares=[cors_middleware()],
+        client_max_size=2 * 1024 * 1024,
+    )
     app.router.add_get("/health", api_health)
     app.router.add_get("/api/health", api_health)
+    app.router.add_get("/media/cards/{filename}", api_media_card)
     app.router.add_post("/api/bootstrap", api_bootstrap)
     app.router.add_post("/api/claim", api_claim)
+    app.router.add_post("/api/progress", api_progress)
     app.router.add_post("/api/admin/grant", api_admin_grant)
+    app.router.add_post("/api/admin/card", api_admin_card)
     app.router.add_route("OPTIONS", "/api/{tail:.*}", api_health)
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)

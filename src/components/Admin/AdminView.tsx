@@ -16,7 +16,8 @@ import {
   updateCard,
   updateShelf,
 } from '../../utils/adminContent';
-import { adminGrant, hasBackend } from '../../api/backend';
+import { adminGrant, adminSaveCard, hasBackend } from '../../api/backend';
+import { applyCardOverrides } from '../../content/loader';
 import { Header } from '../ui/Header';
 import { Button } from '../ui/Button';
 import styles from './AdminView.module.css';
@@ -36,7 +37,7 @@ const RARITIES: Rarity[] = [
   'secret',
 ];
 
-const MAX_DATA_URL_BYTES = 180_000;
+const MAX_DATA_URL_BYTES = 300_000;
 
 type Tab = 'content' | 'grant';
 
@@ -89,6 +90,7 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
   const [grantCoins, setGrantCoins] = useState('25');
   const [grantCases, setGrantCases] = useState('0');
   const [grantBusy, setGrantBusy] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
 
   const inTg = insideTelegramWebApp();
   const isGuest = !userId || userId === 'guest' || !initData;
@@ -184,48 +186,147 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
     }
   };
 
+  const pushCardToServer = async (
+    cardIdToSave: string,
+    fields: {
+      name: string;
+      description: string;
+      rarity: Rarity;
+      image: string;
+    },
+  ): Promise<{ ok: boolean; image?: string; error?: string }> => {
+    if (!hasBackend()) {
+      return { ok: false, error: 'backend не настроен' };
+    }
+    if (!initData) {
+      return {
+        ok: false,
+        error: 'Нужен вход из Telegram Mini App (initData), иначе не у всех',
+      };
+    }
+    const payload: {
+      cardId: string;
+      name: string;
+      description: string;
+      rarity: string;
+      image?: string;
+      imageBase64?: string;
+      mime?: string;
+    } = {
+      cardId: cardIdToSave,
+      name: fields.name,
+      description: fields.description,
+      rarity: fields.rarity,
+    };
+    if (fields.image.startsWith('data:')) {
+      const mimeMatch = /^data:([^;]+);base64,/.exec(fields.image);
+      payload.mime = mimeMatch?.[1] ?? 'image/webp';
+      payload.imageBase64 = fields.image;
+    } else if (fields.image) {
+      payload.image = fields.image;
+    }
+    return adminSaveCard(initData, payload);
+  };
+
   const onPickImage = (file: File | null) => {
     if (!file || !cardId) return;
     const safe = file.name.replace(/[^\w.\-]+/g, '_');
     setLastImageFileName(safe);
-    setShowDeployChecklist(true);
+    setShowDeployChecklist(false);
+    const afterLocal = async (imageValue: string) => {
+      const next = updateCard(data, cardId, { image: imageValue });
+      persist(next);
+      setDraft((d) => ({ ...d, cardImage: imageValue }));
+      setImgBroken(false);
+      setSaveBusy(true);
+      const res = await pushCardToServer(cardId, {
+        name: draft.cardName.trim() || '—',
+        description: draft.cardDesc,
+        rarity: draft.cardRarity,
+        image: imageValue,
+      });
+      setSaveBusy(false);
+      if (res.ok) {
+        const serverImage = res.image ?? imageValue;
+        if (res.image && res.image !== imageValue) {
+          const withUrl = updateCard(next, cardId, { image: res.image });
+          persist(withUrl);
+          setDraft((d) => ({ ...d, cardImage: res.image! }));
+        }
+        applyCardOverrides({
+          [cardId]: {
+            name: draft.cardName.trim() || '—',
+            description: draft.cardDesc,
+            rarity: draft.cardRarity,
+            image: serverImage,
+          },
+        });
+        setNote(
+          'Сохранено на сервере — картинка у всех после перезахода в Mini App',
+        );
+      } else {
+        setShowDeployChecklist(true);
+        setNote(
+          `Локально да, на сервер нет: ${res.error ?? 'ошибка'}. Открой админку из Telegram.`,
+        );
+      }
+    };
+
     if (file.size > MAX_DATA_URL_BYTES) {
       downloadBinaryFile(file, safe);
-      const path = `/cards/${safe}`;
-      const next = updateCard(data, cardId, { image: path });
-      persist(
-        next,
-        `Сохранено на этом устройстве. Файл «${safe}» скачан — положи в public/cards/.`,
+      setNote(
+        `Файл >${Math.round(MAX_DATA_URL_BYTES / 1024)} KB — сожми WebP/JPG и выбери снова (лимит сервера ~300 KB).`,
       );
-      setDraft((d) => ({ ...d, cardImage: path }));
-      setImgBroken(false);
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = String(reader.result ?? '');
-      setDraft((d) => ({ ...d, cardImage: dataUrl }));
-      setImgBroken(false);
       downloadBinaryFile(file, safe);
-      persist(
-        updateCard(data, cardId, { image: dataUrl }),
-        `Сохранено на этом устройстве. Превью тут; файл «${safe}» скачан для public/cards/.`,
-      );
+      void afterLocal(dataUrl);
     };
     reader.readAsDataURL(file);
   };
 
-  const saveCard = () => {
+  const saveCard = async () => {
     if (!card) return;
     const image = draft.cardImage.trim();
-    const next = updateCard(data, card.id, {
+    const fields = {
       name: draft.cardName.trim() || '—',
       description: draft.cardDesc,
-      image,
       rarity: draft.cardRarity,
-    });
-    persist(next, 'Сохранено на этом устройстве');
-    setShowDeployChecklist(true);
+      image,
+    };
+    const next = updateCard(data, card.id, fields);
+    persist(next);
+    setSaveBusy(true);
+    const res = await pushCardToServer(card.id, fields);
+    setSaveBusy(false);
+    if (res.ok) {
+      const serverImage = res.image ?? image;
+      if (res.image && res.image !== image) {
+        const withUrl = updateCard(next, card.id, { image: res.image });
+        persist(withUrl);
+        setDraft((d) => ({ ...d, cardImage: res.image! }));
+      }
+      applyCardOverrides({
+        [card.id]: {
+          name: fields.name,
+          description: fields.description,
+          rarity: fields.rarity,
+          image: serverImage || undefined,
+        },
+      });
+      setShowDeployChecklist(false);
+      setNote(
+        'Сохранено на сервере — у всех игроков после перезахода / следующего входа',
+      );
+    } else {
+      setShowDeployChecklist(true);
+      setNote(
+        `Сохранено только локально: ${res.error ?? 'ошибка'}. Для всех нужен Telegram Mini App + Bothost.`,
+      );
+    }
   };
 
   const redownloadImage = () => {
@@ -315,11 +416,11 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
       ) : null}
 
       <div className={styles.infoBanner} role="note">
-        <strong>Сохранение только на этом устройстве</strong>
+        <strong>Общий контент через Bothost</strong>
         <span>
-          «Сохранить карту» пишет в localStorage этого браузера. На телефоне и у
-          игроков картинка появится только после: файл в{' '}
-          <code>public/cards/</code> → Скачать JSON → push / Vercel.
+          Сохранение карты/фото из Telegram Mini App уходит на сервер — после
+          перезахода картинка видна у всех. Без Telegram (guest) сохранится
+          только на этом устройстве.
         </span>
       </div>
 
@@ -789,14 +890,18 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
                       ))}
                     </select>
                   </label>
-                  <Button fullWidth onClick={saveCard}>
-                    Сохранить карту
+                  <Button
+                    fullWidth
+                    disabled={saveBusy}
+                    onClick={() => void saveCard()}
+                  >
+                    {saveBusy ? 'Сохранение…' : 'Сохранить карту'}
                   </Button>
 
                   {showDeployChecklist ? (
                     <div className={styles.checklist} role="status">
                       <p className={styles.checklistTitle}>
-                        Сохранено на этом устройстве
+                        Запасной путь (если сервер недоступен)
                       </p>
                       <ol className={styles.checklistSteps}>
                         <li>
@@ -806,12 +911,11 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
                             : ''}
                         </li>
                         <li>
-                          В карте путь <code>{suggestedCardsPath}</code> (не
-                          data URL)
+                          Путь <code>{suggestedCardsPath}</code>
                         </li>
                         <li>
-                          «Скачать JSON» → замени{' '}
-                          <code>src/data/content.json</code> → push → Vercel
+                          «Скачать JSON» → <code>src/data/content.json</code> →
+                          push
                         </li>
                       </ol>
                       <div className={styles.checklistActions}>

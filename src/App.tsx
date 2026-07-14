@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { DailyReward, HomeMenuId, Screen } from './types';
-import { config, isAdminUser, isContentReady, preloadContent } from './content/loader';
+import { config, applyCardOverrides, isAdminUser, isContentReady, preloadContent } from './content/loader';
 import { AppLayout } from './components/Layout/AppLayout';
 import { HomeBrand } from './components/Home/HomeBrand';
 import { TopBar } from './components/Home/TopBar';
@@ -121,7 +121,8 @@ function App() {
     buyInkCard,
     applyReferralParam,
     applyServerBootstrap,
-  } = useProgress(userId);
+    replaceFromServer,
+  } = useProgress(userId, initData);
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealedReward, setRevealedReward] = useState<DailyReward | null>(
     null,
@@ -173,6 +174,15 @@ function App() {
           }
           return;
         }
+        await preloadContent();
+        if (cancelled) return;
+        if (boot.cardOverrides && Object.keys(boot.cardOverrides).length > 0) {
+          applyCardOverrides(boot.cardOverrides);
+          setContentEpoch((n) => n + 1);
+        }
+        if (boot.progress) {
+          replaceFromServer(boot.progress);
+        }
         applyServerBootstrap({
           referralCount: boot.referralCount,
           pendingCoins: boot.pendingCoins,
@@ -201,6 +211,7 @@ function App() {
     startParam,
     applyReferralParam,
     applyServerBootstrap,
+    replaceFromServer,
   ]);
 
   useEffect(() => {

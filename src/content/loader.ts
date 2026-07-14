@@ -1,5 +1,14 @@
 import configData from '../data/config.json';
-import type { AppConfig, Book, Card, ContentData, Shelf, Stand } from '../types';
+import type {
+  AppConfig,
+  Book,
+  Card,
+  CardOverride,
+  ContentData,
+  Rarity,
+  Shelf,
+  Stand,
+} from '../types';
 import { clearContentOverlay, loadContentOverlay, saveContentOverlay } from './overlay';
 
 export const config = configData as AppConfig;
@@ -15,6 +24,8 @@ let standsCache: Stand[] | null = null;
 let allCardsCache: Card[] | null = null;
 let cardsByIdCache: Map<string, Card> | null = null;
 let permanentCardsCache: Card[] | null = null;
+/** Server overrides survive local overlay resets / reloads until next apply. */
+let serverOverrides: Record<string, CardOverride> = {};
 
 function clearCaches(): void {
   standsCache = null;
@@ -23,9 +34,35 @@ function clearCaches(): void {
   permanentCardsCache = null;
 }
 
+function patchContentWithOverrides(
+  data: ContentData,
+  overrides: Record<string, CardOverride>,
+): ContentData {
+  if (!overrides || Object.keys(overrides).length === 0) return data;
+  const next = structuredClone(data);
+  for (const stand of next.stands) {
+    for (const shelf of stand.shelves) {
+      for (const book of shelf.books) {
+        for (const page of book.pages) {
+          for (const card of page.cards) {
+            const o = overrides[card.id];
+            if (!o) continue;
+            if (o.name !== undefined) card.name = o.name;
+            if (o.description !== undefined) card.description = o.description;
+            if (o.image !== undefined) card.image = o.image;
+            if (o.rarity !== undefined) card.rarity = o.rarity as Rarity;
+          }
+        }
+      }
+    }
+  }
+  return next;
+}
+
 function applyOverlay(base: ContentData): ContentData {
   const overlay = loadContentOverlay();
-  return overlay ?? base;
+  const withLocal = overlay ?? base;
+  return patchContentWithOverrides(withLocal, serverOverrides);
 }
 
 export function isContentReady(): boolean {
@@ -56,23 +93,36 @@ function requireContent(): ContentData {
   return content;
 }
 
+/** Apply Bothost card overrides (server wins over local overlay fields). */
+export function applyCardOverrides(overrides: Record<string, CardOverride>): void {
+  serverOverrides = { ...overrides };
+  if (!baseContent) return;
+  const overlay = loadContentOverlay();
+  const withLocal = overlay ? structuredClone(overlay) : structuredClone(baseContent);
+  content = patchContentWithOverrides(withLocal, serverOverrides);
+  clearCaches();
+}
+
 /** Deep clone of current effective content (overlay or base). */
 export function getEditableContent(): ContentData {
   return structuredClone(requireContent());
 }
 
-/** Persist overlay and refresh in-memory catalog. */
+/** Persist overlay and refresh in-memory catalog (re-applies server overrides). */
 export function commitEditableContent(data: ContentData): void {
   saveContentOverlay(data);
-  content = structuredClone(data);
+  content = patchContentWithOverrides(structuredClone(data), serverOverrides);
   clearCaches();
 }
 
-/** Drop overlay and restore bundled content.json. */
+/** Drop overlay and restore bundled content.json (+ server overrides). */
 export function resetContentToBase(): void {
   clearContentOverlay();
   if (baseContent) {
-    content = structuredClone(baseContent);
+    content = patchContentWithOverrides(
+      structuredClone(baseContent),
+      serverOverrides,
+    );
     clearCaches();
   }
 }

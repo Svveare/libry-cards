@@ -60,11 +60,14 @@ function applyReward(prev: UserProgress, reward: DailyReward): UserProgress {
   return next;
 }
 
-export function useProgress(userId: string) {
+export function useProgress(userId: string, initData = '') {
   const [progress, setProgress] = useState<UserProgress>(() =>
     loadProgress(userId),
   );
   const progressRef = useRef(progress);
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initDataRef = useRef(initData);
+  initDataRef.current = initData;
 
   useEffect(() => {
     const loaded = loadProgress(userId);
@@ -72,12 +75,35 @@ export function useProgress(userId: string) {
     setProgress(loaded);
   }, [userId]);
 
+  const pushToServer = useCallback((next: UserProgress) => {
+    const data = initDataRef.current;
+    if (!data) return;
+    if (pushTimer.current) clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(() => {
+      void import('../api/backend').then(({ hasBackend, pushProgress }) => {
+        if (!hasBackend()) return;
+        void pushProgress(data, next);
+      });
+    }, 800);
+  }, []);
+
   const commit = useCallback(
     (next: UserProgress) => {
       progressRef.current = next;
       saveProgress(userId, next);
       setProgress(next);
+      pushToServer(next);
       return next;
+    },
+    [userId, pushToServer],
+  );
+
+  /** Replace local progress with Bothost snapshot (same account on all devices). */
+  const replaceFromServer = useCallback(
+    (server: UserProgress) => {
+      progressRef.current = server;
+      saveProgress(userId, server);
+      setProgress(server);
     },
     [userId],
   );
@@ -477,5 +503,6 @@ export function useProgress(userId: string) {
     buyInkCard,
     applyReferralParam,
     applyServerBootstrap,
+    replaceFromServer,
   };
 }
