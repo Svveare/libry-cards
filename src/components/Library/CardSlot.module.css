@@ -1,25 +1,43 @@
 .empty {
   aspect-ratio: 3 / 4;
-  border-radius: 10px;
+  border-radius: 14px;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(42, 35, 28, 0.9), transparent),
-    var(--surface);
-  border: 1px dashed rgba(201, 168, 76, 0.22);
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35);
+    radial-gradient(ellipse 80% 60% at 50% 38%, rgba(50, 42, 33, 0.95), transparent),
+    linear-gradient(160deg, #1a1612, #0c0a08);
+  border: 1px dashed rgba(224, 184, 74, 0.28);
+  box-shadow:
+    inset 0 0 28px rgba(0, 0, 0, 0.45),
+    0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .card {
   aspect-ratio: 3 / 4;
-  border-radius: 10px;
-  background: #0e0c0a;
-  border: 1px solid color-mix(in srgb, var(--card-rarity) 55%, var(--gold-dim));
+  border-radius: 14px;
+  background: #0c0a08;
+  border: 1px solid color-mix(in srgb, var(--card-rarity) 65%, var(--gold));
   box-shadow:
-    0 0 0 1px rgba(201, 168, 76, 0.18),
+    0 0 0 1px rgba(255, 232, 168, 0.12),
+    0 0 28px color-mix(in srgb, var(--card-rarity) 28%, transparent),
     var(--shadow-card);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
+  isolation: isolate;
+  transition:
+    transform 0.35s var(--ease-out),
+    box-shadow 0.45s ease;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--card-rarity) 35%, transparent);
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.85;
 }
 
 .card::after {
@@ -27,9 +45,29 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+  z-index: 3;
   border-radius: inherit;
-  z-index: 2;
+  background: linear-gradient(
+    125deg,
+    transparent 36%,
+    color-mix(in srgb, var(--card-rarity) 18%, rgba(255, 255, 255, 0.08)) 48%,
+    transparent 58%
+  );
+  background-size: 220% 220%;
+  animation: foilSweep 4.8s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+  box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes foilSweep {
+  0%,
+  100% {
+    background-position: 120% 40%;
+  }
+  50% {
+    background-position: -20% 60%;
+  }
 }
 
 .art {
@@ -38,14 +76,31 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(232, 208, 144, 0.08), transparent 60%),
+    radial-gradient(
+      ellipse 75% 55% at 50% 28%,
+      color-mix(in srgb, var(--card-rarity) 26%, transparent),
+      transparent 62%
+    ),
     linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--card-rarity) 22%, #16120e) 0%,
-      #0a0908 100%
+      165deg,
+      color-mix(in srgb, var(--card-rarity) 28%, #1a1510) 0%,
+      #090807 100%
     );
   overflow: hidden;
   position: relative;
+}
+
+.art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 55%,
+    rgba(8, 6, 5, 0.55) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .image {
@@ -57,37 +112,53 @@
 
 .initials {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
-  color: color-mix(in srgb, var(--card-rarity) 80%, var(--gold-bright));
-  opacity: 0.85;
-  letter-spacing: 0.04em;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  color: color-mix(in srgb, var(--card-rarity) 75%, var(--gold-bright));
+  opacity: 0.92;
+  letter-spacing: 0.06em;
+  text-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.55),
+    0 0 24px color-mix(in srgb, var(--card-rarity) 40%, transparent);
 }
 
 .info {
-  padding: 10px 11px 11px;
-  background: linear-gradient(180deg, #16120e, #100e0c);
-  border-top: 1px solid rgba(201, 168, 76, 0.16);
+  padding: 11px 12px 12px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--card-rarity) 10%, #18140f),
+      #0e0c0a
+    );
+  border-top: 1px solid color-mix(in srgb, var(--card-rarity) 35%, rgba(224, 184, 74, 0.2));
   position: relative;
-  z-index: 3;
+  z-index: 5;
 }
 
 .name {
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .rarity {
   font-size: 10px;
   color: var(--card-rarity);
-  font-weight: 700;
-  margin-top: 3px;
-  display: block;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  margin-top: 4px;
+  display: inline-block;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--card-rarity) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card::after {
+    animation: none;
+  }
 }

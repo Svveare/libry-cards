@@ -1,28 +1,28 @@
 :root {
-  /* Oil night library — warm charcoal + surgical brass */
-  --bg-deep: #0a0908;
-  --bg-mid: #12100e;
-  --surface: #1a1612;
-  --surface-hover: #221c16;
-  --surface-raised: #2a231c;
-  --wood: #2a1a12;
-  --wood-light: #3d2818;
-  --lamp: #e6c48a;
-  --gold: #c9a84c;
-  --gold-bright: #e8d090;
-  --gold-dim: #8a6a2e;
-  --text: #f2efe8;
-  --text-muted: #9a9084;
-  --text-soft: #c4bbb0;
-  --border: rgba(201, 168, 76, 0.12);
-  --border-strong: rgba(201, 168, 76, 0.3);
+  /* Oil night library — richer charcoal + luminous brass */
+  --bg-deep: #080706;
+  --bg-mid: #14110e;
+  --surface: #1e1914;
+  --surface-hover: #29231c;
+  --surface-raised: #322a21;
+  --wood: #3a2418;
+  --wood-light: #5a3824;
+  --lamp: #ffd89a;
+  --gold: #e0b84a;
+  --gold-bright: #ffe8a8;
+  --gold-dim: #a07828;
+  --text: #faf6ee;
+  --text-muted: #a89e90;
+  --text-soft: #d4c9b8;
+  --border: rgba(224, 184, 74, 0.16);
+  --border-strong: rgba(224, 184, 74, 0.42);
 
-  --rarity-common: #b0a89c;
-  --rarity-rare: #6a8fbe;
-  --rarity-epic: #a07cc4;
-  --rarity-legendary: #d4af5a;
-  --rarity-mythic: #c47898;
-  --rarity-secret: #5cafa0;
+  --rarity-common: #d2c8b8;
+  --rarity-rare: #5ea0ef;
+  --rarity-epic: #c070f0;
+  --rarity-legendary: #f0c450;
+  --rarity-mythic: #f078b0;
+  --rarity-secret: #3fd4bc;
 
   --font-display: 'Fraunces', 'Georgia', serif;
   --font-ui: 'Nunito Sans', system-ui, sans-serif;
@@ -39,12 +39,18 @@
   --space-5: 20px;
   --space-6: 28px;
 
-  --shadow-gold: 0 10px 32px rgba(201, 168, 76, 0.18);
-  --shadow-card: 0 14px 36px rgba(0, 0, 0, 0.5);
-  --shadow-shelf: inset 0 1px 0 rgba(232, 208, 144, 0.06);
+  --shadow-gold: 0 12px 40px rgba(224, 184, 74, 0.32);
+  --shadow-card: 0 16px 42px rgba(0, 0, 0, 0.55);
+  --shadow-shelf: inset 0 1px 0 rgba(255, 232, 168, 0.08);
 
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Kept for other UI; case strip uses a custom rAF roulette curve */
+  --ease-spin: cubic-bezier(0.2, 0.8, 0.12, 1);
   --press: scale(0.985);
 
-  --grain-opacity: 0.045;
+  --grain-opacity: 0.04;
+  --motion-view: 0.72s;
+  --motion-brand: 0.95s;
+  --motion-row: 0.7s;
+  --motion-modal: 0.58s;
 }

@@ -418,7 +418,7 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
     setGrantBusy(false);
     setNote(
       res.ok
-        ? `Выдано ${target}: +${coins} монет, +${cases} кейсов (заберёт при входе)`
+        ? `Выдано ${target}: +${coins} монет, +${cases} бонус-открытий ежедневки (заберёт при входе)`
         : `Ошибка: ${res.error ?? 'неизвестно'}`,
     );
   };
@@ -491,8 +491,9 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
       {tab === 'grant' ? (
         <div className={styles.grantPanel}>
           <p className={styles.hint}>
-            Игрок получит монеты / бонус-открытия кейса при следующем заходе в
-            Mini App (через бот API).
+            Монеты и бонус-открытия придут игроку при следующем входе в Mini
+            App. Бонус-кейсы — это доп. крутки «Ежедневного бонуса» (не магазин):
+            игрок открывает их там, когда обычный кулдаун ещё идёт.
           </p>
           <label className={styles.field}>
             <span>Telegram ID</span>
@@ -512,7 +513,7 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
             />
           </label>
           <label className={styles.field}>
-            <span>Бонус-кейсы (открытия)</span>
+            <span>Бонус-открытия ежедневки</span>
             <input
               inputMode="numeric"
               value={grantCases}

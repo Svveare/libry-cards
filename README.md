@@ -32,13 +32,11 @@ npm.cmd run dev
 5. В `src/data/config.json` укажи `backendBaseUrl` = публичный HTTPS Bothost (после деплоя бота)
 6. Smoke: daily → сундук → кейс → library → friends → admin
 
-**Важно:** один и тот же `BOT_TOKEN` нельзя одновременно держать на Vercel webhook и на Bothost long polling. Для рефералки/грантов используй Bothost — удали webhook:
+**Важно:** один и тот же `BOT_TOKEN` нельзя одновременно держать на webhook и на Bothost long polling. Для рефералки/грантов используй Bothost:
 
 ```bash
 curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
 ```
-
-(старый `/api/bot-webhook` на Vercel тогда не нужен.)
 
 ## Деплой бота (Bothost)
 

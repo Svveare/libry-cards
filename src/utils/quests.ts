@@ -1,30 +1,63 @@
-export type QuestId = 'open_case' | 'visit_library' | 'open_chest';
+import type { GrantReward } from '../types';
+
+export type QuestId =
+  | 'open_daily'
+  | 'visit_library'
+  | 'open_chest'
+  | 'spend_shop'
+  | 'open_paid_case'
+  | 'ink_today'
+  | 'claim_pass_or_ach';
 
 export interface QuestDef {
   id: QuestId;
   title: string;
   description: string;
-  rewardCoins: number;
+  reward: GrantReward;
 }
 
 export const QUESTS: QuestDef[] = [
   {
-    id: 'open_case',
-    title: 'Открой кейс',
-    description: 'Получи ежедневный бонус',
-    rewardCoins: 10,
+    id: 'open_daily',
+    title: 'Бонус дня',
+    description: 'Открой ежедневный бонус',
+    reward: { kind: 'coins', amount: 12 },
   },
   {
     id: 'visit_library',
-    title: 'Загляни в библиотеку',
+    title: 'В библиотеку',
     description: 'Открой экран библиотеки',
-    rewardCoins: 8,
+    reward: { kind: 'coins', amount: 8 },
   },
   {
     id: 'open_chest',
-    title: 'Открой сундук',
-    description: 'Выбери карту из сундука',
-    rewardCoins: 15,
+    title: 'Сундук',
+    description: 'Открой бесплатный сундук или Сундук+',
+    reward: { kind: 'ink', amount: 3 },
+  },
+  {
+    id: 'spend_shop',
+    title: 'В магазине',
+    description: 'Потрать монеты на покупку',
+    reward: { kind: 'coins', amount: 15 },
+  },
+  {
+    id: 'open_paid_case',
+    title: 'Рулетка',
+    description: 'Открой платный кейс Soft / Mid / Hot',
+    reward: { kind: 'bonusCase', amount: 1 },
+  },
+  {
+    id: 'ink_today',
+    title: 'Чернила дня',
+    description: 'Заработай чернила или купи карту за них',
+    reward: { kind: 'ink', amount: 4 },
+  },
+  {
+    id: 'claim_pass_or_ach',
+    title: 'Прогресс',
+    description: 'Забери награду сезона или ачивку',
+    reward: { kind: 'coins', amount: 20 },
   },
 ];
 

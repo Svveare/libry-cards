@@ -143,10 +143,11 @@ export interface CaseStripItem {
   label: string;
 }
 
-export const WINNER_INDEX = 12;
-const STRIP_LENGTH = 18;
+/** Far enough that the winner stays off-screen until late in the spin. */
+export const WINNER_INDEX = 34;
+const STRIP_LENGTH = 42;
 
-export function kindLabel(kind: DailyRewardKind, moneyAmount?: number): string {
+function kindLabel(kind: DailyRewardKind, moneyAmount?: number): string {
   switch (kind) {
     case 'money':
       return moneyAmount != null

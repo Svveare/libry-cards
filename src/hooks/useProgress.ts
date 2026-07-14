@@ -9,7 +9,7 @@ import type {
   UserProgress,
 } from '../types';
 import { config, canAccessChannelFeature, getCardById } from '../content/loader';
-import { loadProgress, saveProgress } from '../utils/storage';
+import { loadProgress, normalizeProgress, saveProgress } from '../utils/storage';
 import { canOpenDaily, willUseBonusCaseOpen } from '../utils/dailyOpen';
 import { rollDailyReward, rollPaidCaseReward } from '../utils/dailyRoll';
 import { canOpenChest } from '../utils/chestOpen';
@@ -20,9 +20,9 @@ import {
 } from '../utils/shop';
 import {
   isSameUtcDay,
+  QUESTS,
   questClaimKey,
   type QuestId,
-  utcDayKey,
 } from '../utils/quests';
 import { inkForDupe, inkShopPrice, REFERRAL_INVITEE_COINS } from '../utils/ink';
 import { needsInkShopRefresh, rollInkShopOffers } from '../utils/inkShop';
@@ -32,6 +32,19 @@ import {
   scanCollectionStats,
   type AchievementId,
 } from '../utils/achievements';
+import { applyGrant } from '../utils/grantReward';
+import { bumpDayStats, withCurrentDayStats } from '../utils/dayStats';
+import { tickDailyStreak } from '../utils/streak';
+import {
+  BATTLE_PASS_LEVEL_DEFS,
+  BATTLE_PASS_LEVELS,
+  BATTLE_PASS_PREMIUM_PRICE,
+  BATTLE_PASS_SEASON_ID,
+  BP_XP,
+  battlePassLevel,
+  defaultBattlePassProgress,
+  type PassTrack,
+} from '../data/battlePass';
 
 export type DailyPreviewResult =
   | { status: 'ok'; reward: DailyReward }
@@ -58,6 +71,34 @@ function applyReward(prev: UserProgress, reward: DailyReward): UserProgress {
     }
   }
   return next;
+}
+
+function ensureBattlePass(progress: UserProgress): UserProgress {
+  if (progress.battlePass?.seasonId === BATTLE_PASS_SEASON_ID) {
+    return progress;
+  }
+  return { ...progress, battlePass: defaultBattlePassProgress() };
+}
+
+function addXp(progress: UserProgress, amount: number): UserProgress {
+  let next = ensureBattlePass(withCurrentDayStats(progress));
+  const levelBefore = battlePassLevel(next.battlePass.xp);
+  if (levelBefore >= BATTLE_PASS_LEVELS) return next;
+  const xp = next.battlePass.xp + amount;
+  next = {
+    ...next,
+    battlePass: { ...next.battlePass, xp },
+  };
+  return next;
+}
+
+function trackInkFromReward(
+  before: UserProgress,
+  after: UserProgress,
+): UserProgress {
+  const gained = after.lifetimeInkEarned - before.lifetimeInkEarned;
+  if (gained <= 0) return after;
+  return bumpDayStats(after, { inkEarned: gained });
 }
 
 export function useProgress(userId: string, initData = '') {
@@ -98,12 +139,12 @@ export function useProgress(userId: string, initData = '') {
     [userId, pushToServer],
   );
 
-  /** Replace local progress with Bothost snapshot (same account on all devices). */
   const replaceFromServer = useCallback(
     (server: UserProgress) => {
-      progressRef.current = server;
-      saveProgress(userId, server);
-      setProgress(server);
+      const normalized = normalizeProgress(server);
+      progressRef.current = normalized;
+      saveProgress(userId, normalized);
+      setProgress(normalized);
     },
     [userId],
   );
@@ -156,8 +197,11 @@ export function useProgress(userId: string, initData = '') {
           : prev.bonusCaseOpens,
         lifetimeDailyOpens: prev.lifetimeDailyOpens + 1,
       };
+      const beforeInk = next;
       next = applyReward(next, reward);
-      commit(next);
+      next = trackInkFromReward(beforeInk, next);
+      const streaked = tickDailyStreak(next);
+      commit(streaked.progress);
     },
     [commit],
   );
@@ -167,10 +211,7 @@ export function useProgress(userId: string, initData = '') {
       const prev = progressRef.current;
       if (variant === 'free') {
         if (
-          !canAccessChannelFeature(
-            Boolean(prev.channelConfirmedAt),
-            'chest',
-          )
+          !canAccessChannelFeature(Boolean(prev.channelConfirmedAt), 'chest')
         ) {
           return false;
         }
@@ -181,39 +222,50 @@ export function useProgress(userId: string, initData = '') {
     [],
   );
 
-  /** Call when the player actually picks a chest slot. */
   const commitChestOpen = useCallback(
     (variant: ChestVariant = 'free') => {
       const prev = progressRef.current;
-      if (variant === 'free') {
-        commit({
-          ...prev,
-          lastChestOpenAt: new Date().toISOString(),
-          lifetimeChestOpens: prev.lifetimeChestOpens + 1,
-        });
-      } else {
-        commit({
-          ...prev,
-          lifetimeChestOpens: prev.lifetimeChestOpens + 1,
-        });
-      }
+      let next: UserProgress =
+        variant === 'free'
+          ? {
+              ...prev,
+              lastChestOpenAt: new Date().toISOString(),
+              lifetimeChestOpens: prev.lifetimeChestOpens + 1,
+            }
+          : {
+              ...prev,
+              lifetimeChestOpens: prev.lifetimeChestOpens + 1,
+            };
+      next = bumpDayStats(next, { chestOpens: 1 });
+      commit(next);
     },
     [commit],
   );
 
   const commitReward = useCallback(
     (reward: DailyReward) => {
-      commit(applyReward(progressRef.current, reward));
+      const prev = progressRef.current;
+      let next = applyReward(prev, reward);
+      next = trackInkFromReward(prev, next);
+      commit(next);
     },
     [commit],
   );
 
-  /** Deduct case price + apply reward only after the spin ends. */
   const commitPaidCase = useCallback(
     (reward: DailyReward, price: number) => {
       const prev = progressRef.current;
       if (prev.coins < price) return;
-      commit(applyReward({ ...prev, coins: prev.coins - price }, reward));
+      let next: UserProgress = {
+        ...prev,
+        coins: prev.coins - price,
+        lifetimePaidCases: prev.lifetimePaidCases + 1,
+      };
+      next = bumpDayStats(next, { spentCoins: price, paidCases: 1 });
+      const before = next;
+      next = applyReward(next, reward);
+      next = trackInkFromReward(before, next);
+      commit(next);
     },
     [commit],
   );
@@ -228,13 +280,23 @@ export function useProgress(userId: string, initData = '') {
   }, [commit]);
 
   const isQuestComplete = useCallback((questId: QuestId): boolean => {
-    const prev = progressRef.current;
-    const day = utcDayKey();
-    if (questId === 'open_case') return isSameUtcDay(prev.lastDailyOpenAt, day);
+    const prev = withCurrentDayStats(progressRef.current);
+    const stats = prev.dayStats;
+    if (questId === 'open_daily') {
+      return (
+        isSameUtcDay(prev.lastDailyOpenAt) ||
+        prev.dailyStreakLastDate === stats.day
+      );
+    }
     if (questId === 'visit_library')
-      return isSameUtcDay(prev.visitedLibraryAt, day);
-    if (questId === 'open_chest')
-      return isSameUtcDay(prev.lastChestOpenAt, day);
+      return isSameUtcDay(prev.visitedLibraryAt);
+    if (questId === 'open_chest') return stats.chestOpens > 0;
+    if (questId === 'spend_shop') return stats.spentCoins > 0;
+    if (questId === 'open_paid_case') return stats.paidCases > 0;
+    if (questId === 'ink_today')
+      return stats.inkEarned > 0 || stats.inkBuys > 0;
+    if (questId === 'claim_pass_or_ach')
+      return stats.passClaims > 0 || stats.achievementClaims > 0;
     return false;
   }, []);
 
@@ -242,26 +304,32 @@ export function useProgress(userId: string, initData = '') {
     return progressRef.current.claimedQuestIds.includes(questClaimKey(questId));
   }, []);
 
-  const claimQuest = useCallback(
-    (questId: QuestId, rewardCoins: number): boolean => {
-      const prev = progressRef.current;
-      const key = questClaimKey(questId);
-      if (!isQuestComplete(questId) || prev.claimedQuestIds.includes(key)) {
-        return false;
-      }
-      commit({
-        ...prev,
-        coins: prev.coins + rewardCoins,
-        claimedQuestIds: [...prev.claimedQuestIds, key],
-      });
-      return true;
-    },
-    [commit, isQuestComplete],
-  );
+  const claimQuest = useCallback((questId: QuestId): boolean => {
+    const prev = withCurrentDayStats(progressRef.current);
+    const key = questClaimKey(questId);
+    const def = QUESTS.find((q) => q.id === questId);
+    if (
+      !def ||
+      !isQuestComplete(questId) ||
+      prev.claimedQuestIds.includes(key)
+    ) {
+      return false;
+    }
+    const before = prev;
+    let next = applyGrant(prev, def.reward);
+    next = trackInkFromReward(before, next);
+    next = {
+      ...next,
+      claimedQuestIds: [...next.claimedQuestIds, key],
+    };
+    next = addXp(next, BP_XP.quest);
+    commit(next);
+    return true;
+  }, [commit, isQuestComplete]);
 
   const claimAchievement = useCallback(
     (id: AchievementId): boolean => {
-      const prev = progressRef.current;
+      const prev = withCurrentDayStats(progressRef.current);
       const def = ACHIEVEMENTS.find((a) => a.id === id);
       const stats = scanCollectionStats(prev.collectedCardIds);
       if (
@@ -271,11 +339,65 @@ export function useProgress(userId: string, initData = '') {
       ) {
         return false;
       }
-      commit({
-        ...prev,
-        coins: prev.coins + def.rewardCoins,
-        claimedAchievementIds: [...prev.claimedAchievementIds, id],
-      });
+      const before = prev;
+      let next = applyGrant(prev, def.reward);
+      next = trackInkFromReward(before, next);
+      next = {
+        ...next,
+        claimedAchievementIds: [...next.claimedAchievementIds, id],
+      };
+      next = bumpDayStats(next, { achievementClaims: 1 });
+      commit(next);
+      return true;
+    },
+    [commit],
+  );
+
+  const buyBattlePassPremium = useCallback((): boolean => {
+    let prev = ensureBattlePass(withCurrentDayStats(progressRef.current));
+    if (prev.battlePass.premium) return false;
+    if (prev.coins < BATTLE_PASS_PREMIUM_PRICE) return false;
+    commit({
+      ...prev,
+      coins: prev.coins - BATTLE_PASS_PREMIUM_PRICE,
+      battlePass: { ...prev.battlePass, premium: true },
+    });
+    return true;
+  }, [commit]);
+
+  const claimBattlePassReward = useCallback(
+    (level: number, track: PassTrack): boolean => {
+      let prev = ensureBattlePass(withCurrentDayStats(progressRef.current));
+      const def = BATTLE_PASS_LEVEL_DEFS.find((l) => l.level === level);
+      if (!def || level < 1 || level > BATTLE_PASS_LEVELS) return false;
+      if (battlePassLevel(prev.battlePass.xp) < level) return false;
+      if (track === 'premium' && !prev.battlePass.premium) return false;
+      const claimed =
+        track === 'free'
+          ? prev.battlePass.claimedFree
+          : prev.battlePass.claimedPremium;
+      if (claimed.includes(level)) return false;
+
+      const reward = track === 'free' ? def.free : def.premium;
+      const before = prev;
+      let next = applyGrant(prev, reward);
+      next = trackInkFromReward(before, next);
+      next = {
+        ...next,
+        battlePass: {
+          ...next.battlePass,
+          claimedFree:
+            track === 'free'
+              ? [...next.battlePass.claimedFree, level]
+              : next.battlePass.claimedFree,
+          claimedPremium:
+            track === 'premium'
+              ? [...next.battlePass.claimedPremium, level]
+              : next.battlePass.claimedPremium,
+        },
+      };
+      next = bumpDayStats(next, { passClaims: 1 });
+      commit(next);
       return true;
     },
     [commit],
@@ -307,7 +429,10 @@ export function useProgress(userId: string, initData = '') {
   const buyInkCard = useCallback(
     (
       cardId: string,
-    ): { status: 'ok'; card: Card } | { status: 'broke' } | { status: 'gone' } => {
+    ):
+      | { status: 'ok'; card: Card }
+      | { status: 'broke' }
+      | { status: 'gone' } => {
       const prev = progressRef.current;
       if (!prev.inkShopCardIds.includes(cardId)) return { status: 'gone' };
       if (prev.collectedCardIds.includes(cardId)) return { status: 'gone' };
@@ -316,17 +441,17 @@ export function useProgress(userId: string, initData = '') {
       const price = inkShopPrice(card.rarity);
       if (prev.ink < price) return { status: 'broke' };
       const reward: DailyReward = { kind: 'card', card };
-      commit(
-        applyReward(
-          {
-            ...prev,
-            ink: prev.ink - price,
-            inkPurchases: prev.inkPurchases + 1,
-            inkShopCardIds: prev.inkShopCardIds.filter((id) => id !== cardId),
-          },
-          reward,
-        ),
+      let next = applyReward(
+        {
+          ...prev,
+          ink: prev.ink - price,
+          inkPurchases: prev.inkPurchases + 1,
+          inkShopCardIds: prev.inkShopCardIds.filter((id) => id !== cardId),
+        },
+        reward,
       );
+      next = bumpDayStats(next, { inkBuys: 1 });
+      commit(next);
       return { status: 'ok', card };
     },
     [commit],
@@ -347,7 +472,6 @@ export function useProgress(userId: string, initData = '') {
     [commit, userId],
   );
 
-  /** Apply pending coins/cases + referralCount from Bothost bootstrap. */
   const applyServerBootstrap = useCallback(
     (payload: {
       referralCount: number;
@@ -417,9 +541,12 @@ export function useProgress(userId: string, initData = '') {
           return { status: 'broke' };
         }
         const reward: DailyReward = { kind: 'card', card };
-        const base = useToken
+        let base = useToken
           ? { ...prev, bookTokens: prev.bookTokens - 1 }
           : { ...prev, coins: prev.coins - item.price };
+        if (!useToken && item.price > 0) {
+          base = bumpDayStats(base, { spentCoins: item.price });
+        }
         commit(applyReward(base, reward));
         return {
           status: 'ok',
@@ -441,16 +568,23 @@ export function useProgress(userId: string, initData = '') {
       }
 
       if (action === 'reset_chest') {
-        commit({
+        let next: UserProgress = {
           ...prev,
           coins: prev.coins - item.price,
           lastChestOpenAt: null,
-        });
+        };
+        next = bumpDayStats(next, { spentCoins: item.price });
+        commit(next);
         return { status: 'ok', message: 'Ожидание сундука сброшено' };
       }
 
       if (action === 'open_chest_plus') {
-        commit({ ...prev, coins: prev.coins - item.price });
+        let next: UserProgress = {
+          ...prev,
+          coins: prev.coins - item.price,
+        };
+        next = bumpDayStats(next, { spentCoins: item.price });
+        commit(next);
         return { status: 'chest_plus' };
       }
 
@@ -473,9 +607,12 @@ export function useProgress(userId: string, initData = '') {
           };
         }
         const reward: DailyReward = { kind: 'card', card };
-        commit(
-          applyReward({ ...prev, coins: prev.coins - item.price }, reward),
-        );
+        let next: UserProgress = {
+          ...prev,
+          coins: prev.coins - item.price,
+        };
+        next = bumpDayStats(next, { spentCoins: item.price });
+        commit(applyReward(next, reward));
         return { status: 'ok', reward, message: 'Карта получена' };
       }
 
@@ -504,5 +641,7 @@ export function useProgress(userId: string, initData = '') {
     applyReferralParam,
     applyServerBootstrap,
     replaceFromServer,
+    buyBattlePassPremium,
+    claimBattlePassReward,
   };
 }

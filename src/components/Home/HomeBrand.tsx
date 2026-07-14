@@ -23,8 +23,8 @@ export function HomeBrand() {
               y2="42"
               gradientUnits="userSpaceOnUse"
             >
-              <stop stopColor="#e8d090" />
-              <stop offset="1" stopColor="#8a6a2e" />
+              <stop stopColor="#ffe8a8" />
+              <stop offset="1" stopColor="#a07828" />
             </linearGradient>
           </defs>
         </svg>

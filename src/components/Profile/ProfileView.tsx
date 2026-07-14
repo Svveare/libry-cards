@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   ACHIEVEMENTS,
+  achievementRewardLabel,
   isAchievementComplete,
   scanCollectionStats,
 } from '../../utils/achievements';
@@ -54,7 +55,7 @@ export function ProfileView({
       <div className={styles.refBadge}>
         <span>Приглашено</span>
         <strong>{progress.referralCount}</strong>
-        <em className={styles.refHint}>позже с сервера</em>
+        <em className={styles.refHint}>друзей по ссылке</em>
       </div>
 
       <div className={styles.stats}>
@@ -67,8 +68,8 @@ export function ProfileView({
           <span className={styles.value}>{progress.ink}</span>
         </div>
         <div className={styles.stat}>
-          <span className={styles.label}>Рейтинг</span>
-          <span className={styles.value}>{progress.rating}</span>
+          <span className={styles.label}>Серия</span>
+          <span className={styles.value}>{progress.dailyStreak}</span>
         </div>
         <div className={styles.stat}>
           <span className={styles.label}>Карты</span>
@@ -88,7 +89,7 @@ export function ProfileView({
               <div>
                 <p className={styles.achTitle}>{a.title}</p>
                 <p className={styles.achDesc}>{a.description}</p>
-                <p className={styles.achReward}>+{a.rewardCoins} монет</p>
+                <p className={styles.achReward}>{achievementRewardLabel(a)}</p>
               </div>
               <Button
                 disabled={!done || claimed}

@@ -3,13 +3,110 @@
 }
 
 .lead {
-  margin: 0 0 22px;
+  margin: 0 0 18px;
   font-size: 13.5px;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--text-muted);
   text-align: center;
-  max-width: 28ch;
+  max-width: 34ch;
   margin-left: auto;
   margin-right: auto;
+}
+
+.bonusBadge {
+  margin: 0 auto 16px;
+  max-width: max-content;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bg-deep);
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  box-shadow: 0 6px 20px rgba(224, 184, 74, 0.35);
+  animation: badgeIn 0.65s var(--ease-out) both;
+}
+
+.streak {
+  margin: 0 0 18px;
+  padding: 14px 14px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background:
+    radial-gradient(ellipse 90% 80% at 0% 0%, rgba(224, 184, 74, 0.14), transparent 55%),
+    var(--surface);
+}
+
+.streakTitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.streakTitle strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--gold-bright);
+  margin-left: 4px;
+}
+
+.streakChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.chip {
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.chipSoon {
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chipReady {
+  color: var(--gold-bright);
+  border: 1px solid var(--border-strong);
+  background: rgba(224, 184, 74, 0.12);
+}
+
+.chipDone {
+  color: var(--bg-deep);
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+}
+
+.streakHint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+@keyframes badgeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bonusBadge {
+    animation: none;
+  }
 }

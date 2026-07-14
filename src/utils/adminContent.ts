@@ -8,7 +8,7 @@ const PAGE_RARITIES: Rarity[] = [
   'mythic',
 ];
 
-export function slugifyId(raw: string): string {
+function slugifyId(raw: string): string {
   return raw
     .toLowerCase()
     .trim()
@@ -86,7 +86,7 @@ function collectIds(data: ContentData): Set<string> {
   return used;
 }
 
-export function createEmptyPages(
+function createEmptyPages(
   bookId: string,
   shelfId: string,
   standId: string,
@@ -238,21 +238,4 @@ export function updateCard(
     }
   }
   return data;
-}
-
-export function findCard(
-  data: ContentData,
-  cardId: string,
-): Card | undefined {
-  for (const stand of data.stands) {
-    for (const shelf of stand.shelves) {
-      for (const book of shelf.books) {
-        for (const page of book.pages) {
-          const card = page.cards.find((c) => c.id === cardId);
-          if (card) return card;
-        }
-      }
-    }
-  }
-  return undefined;
 }

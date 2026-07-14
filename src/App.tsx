@@ -46,6 +46,11 @@ const QuestsView = lazy(() =>
     default: m.QuestsView,
   })),
 );
+const PassView = lazy(() =>
+  import('./components/Pass/PassView').then((m) => ({
+    default: m.PassView,
+  })),
+);
 const StandsView = lazy(() =>
   import('./components/Library/StandsView').then((m) => ({
     default: m.StandsView,
@@ -87,6 +92,7 @@ function ScreenFallback() {
 function screenNeedsContent(screen: Screen): boolean {
   return (
     screen.name === 'daily' ||
+    screen.name === 'pass' ||
     screen.name === 'chest' ||
     screen.name === 'library' ||
     screen.name === 'stand' ||
@@ -122,6 +128,8 @@ function App() {
     applyReferralParam,
     applyServerBootstrap,
     replaceFromServer,
+    buyBattlePassPremium,
+    claimBattlePassReward,
   } = useProgress(userId, initData);
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealedReward, setRevealedReward] = useState<DailyReward | null>(
@@ -286,6 +294,9 @@ function App() {
             />
             <DailyBonusView
               lastDailyOpenAt={progress.lastDailyOpenAt}
+              bonusCaseOpens={progress.bonusCaseOpens}
+              dailyStreak={progress.dailyStreak}
+              claimedStreakMilestones={progress.claimedStreakMilestones}
               channelConfirmed={Boolean(progress.channelConfirmedAt)}
               onPreview={previewDailyOpen}
               onCommit={commitDailyOpen}
@@ -293,6 +304,21 @@ function App() {
               onOpenChannel={openTelegramLink}
               onSyncSubscription={syncChannelSubscription}
               initData={initData}
+            />
+          </>
+        );
+      case 'pass':
+        return (
+          <>
+            <Header
+              title="Сезон"
+              subtitle="Battle Pass · free и Pro"
+              onBack={goHome}
+            />
+            <PassView
+              progress={progress}
+              onBuyPremium={buyBattlePassPremium}
+              onClaim={claimBattlePassReward}
             />
           </>
         );
@@ -386,7 +412,7 @@ function App() {
           <>
             <Header
               title="Задания"
-              subtitle="Монеты за дела дня"
+              subtitle="Ежедневные цели и награды"
               onBack={goHome}
             />
             <QuestsView
@@ -508,7 +534,11 @@ function App() {
               onProfileClick={() => setScreen({ name: 'profile' })}
             />
             <HomeBrand />
-            <HomeMenu onSelect={openMenu} />
+            <HomeMenu
+              onSelect={openMenu}
+              bonusCaseOpens={progress.bonusCaseOpens}
+              dailyStreak={progress.dailyStreak}
+            />
           </>
         );
     }

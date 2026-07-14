@@ -48,16 +48,16 @@ h2 {
 @keyframes libryFadeIn {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(18px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .viewEnter {
-  animation: libryFadeIn 0.42s var(--ease-out);
+  animation: libryFadeIn var(--motion-view) var(--ease-out) both;
 }
 
 .listStack {

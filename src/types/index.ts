@@ -2,7 +2,13 @@ export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'secr
 
 export type StandType = 'permanent' | 'seasonal' | 'collab' | 'event' | 'collectible';
 
-export type HomeMenuId = 'daily' | 'library' | 'quests' | 'shop' | 'friends';
+export type HomeMenuId =
+  | 'daily'
+  | 'pass'
+  | 'library'
+  | 'quests'
+  | 'shop'
+  | 'friends';
 
 export type ShopCategoryId =
   | 'chests'
@@ -152,6 +158,35 @@ export interface AppConfig {
   };
 }
 
+export type CardRarityRoll = 'common' | 'rare' | 'epic' | 'legendary';
+
+/** Grantable reward for pass / streak / quests / achievements. */
+export type GrantReward =
+  | { kind: 'coins'; amount: number }
+  | { kind: 'ink'; amount: number }
+  | { kind: 'book'; amount: number }
+  | { kind: 'bonusCase'; amount: number }
+  | { kind: 'cardRarity'; rarity: CardRarityRoll };
+
+export interface DayStats {
+  day: string;
+  spentCoins: number;
+  paidCases: number;
+  inkEarned: number;
+  inkBuys: number;
+  passClaims: number;
+  achievementClaims: number;
+  chestOpens: number;
+}
+
+export interface BattlePassProgress {
+  seasonId: string;
+  xp: number;
+  premium: boolean;
+  claimedFree: number[];
+  claimedPremium: number[];
+}
+
 export interface UserProgress {
   collectedCardIds: string[];
   lastDailyOpenAt: string | null;
@@ -170,11 +205,17 @@ export interface UserProgress {
   lifetimeChestOpens: number;
   lifetimeInkEarned: number;
   inkPurchases: number;
+  lifetimePaidCases: number;
   referralCount: number;
   referredByUserId: string | null;
   referralBonusClaimed: boolean;
   /** Soft channel gate until bot membership check exists. */
   channelConfirmedAt: string | null;
+  dailyStreak: number;
+  dailyStreakLastDate: string | null;
+  claimedStreakMilestones: number[];
+  dayStats: DayStats;
+  battlePass: BattlePassProgress;
 }
 
 export type DailyRewardKind =
@@ -195,6 +236,7 @@ export type DailyReward =
 export type Screen =
   | { name: 'home' }
   | { name: 'daily' }
+  | { name: 'pass' }
   | { name: 'chest'; variant?: ChestVariant }
   | { name: 'library' }
   | { name: 'quests' }
@@ -232,8 +274,8 @@ export const REWARD_KIND_COLORS: Record<DailyRewardKind, string> = {
   rare: 'var(--rarity-rare)',
   epic: 'var(--rarity-epic)',
   legendary: 'var(--rarity-legendary)',
-  book: '#c4a574',
-  ink: '#7eb8d4',
+  book: '#e0b878',
+  ink: '#6ec8f0',
 };
 
 export const STAND_TYPE_LABELS: Record<StandType, string> = {

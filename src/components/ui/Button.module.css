@@ -32,10 +32,14 @@
   color: var(--bg-deep);
   box-shadow: var(--shadow-gold);
   font-weight: 800;
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.28s ease,
+    opacity 0.15s ease;
 }
 
 .primary:hover:not(:disabled) {
-  box-shadow: 0 10px 32px rgba(201, 168, 76, 0.3);
+  box-shadow: 0 14px 40px rgba(224, 184, 74, 0.42);
 }
 
 .secondary {

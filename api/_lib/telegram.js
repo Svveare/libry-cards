@@ -12,13 +12,6 @@ export function getChannelUsername() {
   return raw.startsWith('@') ? raw : `@${raw}`;
 }
 
-export function getWebAppUrl() {
-  const url =
-    process.env.TELEGRAM_WEBAPP_URL?.trim() ||
-    'https://libry-cards.vercel.app';
-  return url.replace(/\/$/, '');
-}
-
 /** Validate Telegram Mini App initData (WebAppData). */
 export function validateInitData(initData, botToken, maxAgeSeconds = 86400) {
   try {
@@ -84,13 +77,4 @@ export function isSubscribedStatus(status) {
     status === 'member' ||
     status === 'restricted'
   );
-}
-
-export async function telegramCall(botToken, method, body) {
-  const res = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
 }

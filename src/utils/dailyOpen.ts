@@ -1,12 +1,6 @@
 /** Daily open gate — wraps shared cooldown helpers. */
 import { config, getDailyCooldownMs } from '../content/loader';
-import {
-  canOpenAfter,
-  formatCooldown,
-  getRemainingMs,
-} from './cooldown';
-
-export { formatCooldown };
+import { canOpenAfter, getRemainingMs } from './cooldown';
 
 export function canOpenDaily(
   lastDailyOpenAt: string | null,

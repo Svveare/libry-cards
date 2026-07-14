@@ -5,7 +5,7 @@ import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import { config, getChannelUrl } from '../../content/loader';
 import { useCooldownMs } from '../../hooks/useCooldownMs';
 import { canOpenChest, getTimeUntilNextChest } from '../../utils/chestOpen';
-import { formatCooldown } from '../../utils/dailyOpen';
+import { formatCooldown } from '../../utils/cooldown';
 import {
   resolveChestPick,
   rollChestSlots,

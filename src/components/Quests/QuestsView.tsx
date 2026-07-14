@@ -1,18 +1,21 @@
 import { QUESTS, type QuestId } from '../../utils/quests';
+import { formatGrantReward } from '../../utils/grantReward';
+import { BP_XP } from '../../data/battlePass';
 import { Button } from '../ui/Button';
 import { SurfaceListItem } from '../ui/SurfaceListItem';
 
 interface QuestsViewProps {
   isComplete: (id: QuestId) => boolean;
   isClaimed: (id: QuestId) => boolean;
-  onClaim: (id: QuestId, rewardCoins: number) => boolean;
+  onClaim: (id: QuestId) => boolean;
 }
 
 export function QuestsView({ isComplete, isClaimed, onClaim }: QuestsViewProps) {
   return (
     <section className="viewEnter">
       <p className="mutedCopy" style={{ marginBottom: 18, textAlign: 'center' }}>
-        Каждый день — новые дела. Забери монеты после выполнения.
+        Выполни дела и забери награду — так качается сезон (+{BP_XP.quest} XP
+        за каждое).
       </p>
       <div className="listStack">
         {QUESTS.map((quest) => {
@@ -46,14 +49,14 @@ export function QuestsView({ isComplete, isClaimed, onClaim }: QuestsViewProps) 
                       color: 'var(--gold)',
                     }}
                   >
-                    +{quest.rewardCoins} монет
+                    {formatGrantReward(quest.reward)} · +{BP_XP.quest} XP
                   </p>
                 </div>
               }
               action={
                 <Button
                   disabled={!complete || claimed}
-                  onClick={() => onClaim(quest.id, quest.rewardCoins)}
+                  onClick={() => onClaim(quest.id)}
                 >
                   {claimed ? 'Забрано' : 'Забрать'}
                 </Button>
