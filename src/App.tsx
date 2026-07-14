@@ -258,6 +258,7 @@ function App() {
         return (
           <AdminView
             initData={initData}
+            userId={userId}
             onBack={() => {
               setContentEpoch((n) => n + 1);
               setScreen({ name: 'profile' });

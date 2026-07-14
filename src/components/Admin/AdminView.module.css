@@ -235,3 +235,91 @@
   font-size: 13px;
   color: var(--text-muted);
 }
+
+.warnBanner,
+.infoBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.warnBanner {
+  border: 1px solid rgba(224, 120, 90, 0.45);
+  background: rgba(224, 120, 90, 0.12);
+  color: var(--text-soft);
+}
+
+.infoBanner {
+  border: 1px solid var(--border-strong);
+  background: rgba(212, 168, 83, 0.1);
+  color: var(--text-soft);
+}
+
+.warnBanner strong,
+.infoBanner strong {
+  font-size: 13px;
+  color: var(--gold-bright);
+}
+
+.warnBanner code,
+.infoBanner code,
+.checklist code {
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.statusOverlay,
+.statusPath {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.statusOverlay {
+  color: #e0a070;
+}
+
+.statusPath {
+  color: var(--gold);
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: rgba(212, 168, 83, 0.08);
+}
+
+.checklistTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gold-bright);
+}
+
+.checklistSteps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.checklistSteps li {
+  margin-bottom: 4px;
+}
+
+.checklistActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

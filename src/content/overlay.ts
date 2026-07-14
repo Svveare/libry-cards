@@ -42,3 +42,19 @@ export function downloadBinaryFile(blob: Blob, filename: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Re-download a data: URL as a binary file (for public/cards/). */
+export function downloadDataUrlAsFile(
+  dataUrl: string,
+  filename = 'card.webp',
+): void {
+  const comma = dataUrl.indexOf(',');
+  if (comma < 0) return;
+  const header = dataUrl.slice(0, comma);
+  const body = dataUrl.slice(comma + 1);
+  const mime = /data:([^;]+)/.exec(header)?.[1] ?? 'application/octet-stream';
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  downloadBinaryFile(new Blob([bytes], { type: mime }), filename);
+}

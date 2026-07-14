@@ -60,10 +60,23 @@ curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
 ## Контент
 
 - `src/data/content.json` / `config.json`
-- Картинки: HTTPS URL или `public/cards/` + `"image": "/cards/….webp"` (900×1200)
-- В Telegram WebView file picker скрыт — URL или админка в браузере
+- Картинки: файл в `public/cards/` + `"image": "/cards/….webp"` (900×1200)
 - Баннер (если нужен): `public/bot/welcome-banner.jpg`
-- Админка: оверлей + «Скачать JSON» → коммит и редеплой
+- Админка пишет оверлей **только в браузер этого устройства** (localStorage)
+
+### Картинки с ПК на телефон
+
+Прогресс и правки админки **не синхронизируются** между устройствами. ПК в обычном браузере часто = профиль `guest`, телефон в Telegram = твой ID.
+
+Чтобы фотка с ПК появилась на телефоне у всех:
+
+1. Админка в браузере → выбрать файл → сохранить
+2. Скачанный файл положить в `public/cards/name.webp`
+3. В карте путь `/cards/name.webp` (не data URL)
+4. «Скачать JSON» → заменить `src/data/content.json`
+5. Commit + push → дождаться Vercel → открыть Mini App на телефоне
+
+Яндекс.Диск / Google Drive не подойдут: ссылка ведёт на страницу, не на файл картинки.
 
 ## Без backendBaseUrl
 

@@ -6,7 +6,7 @@ import {
   getEditableContent,
   resetContentToBase,
 } from '../../content/loader';
-import { downloadBinaryFile, downloadContentJson } from '../../content/overlay';
+import { downloadBinaryFile, downloadContentJson, downloadDataUrlAsFile } from '../../content/overlay';
 import {
   addBook,
   addShelf,
@@ -24,6 +24,7 @@ import styles from './AdminView.module.css';
 interface AdminViewProps {
   onBack: () => void;
   initData: string;
+  userId: string;
 }
 
 const RARITIES: Rarity[] = [
@@ -69,7 +70,7 @@ function insideTelegramWebApp(): boolean {
   }
 }
 
-export function AdminView({ onBack, initData }: AdminViewProps) {
+export function AdminView({ onBack, initData, userId }: AdminViewProps) {
   const [tab, setTab] = useState<Tab>('content');
   const [data, setData] = useState<ContentData>(() => getEditableContent());
   const [standId, setStandId] = useState('permanent');
@@ -79,6 +80,10 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [note, setNote] = useState<string | null>(null);
   const [imgBroken, setImgBroken] = useState(false);
+  const [lastImageFileName, setLastImageFileName] = useState<string | null>(
+    null,
+  );
+  const [showDeployChecklist, setShowDeployChecklist] = useState(false);
 
   const [grantId, setGrantId] = useState('');
   const [grantCoins, setGrantCoins] = useState('25');
@@ -86,6 +91,40 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
   const [grantBusy, setGrantBusy] = useState(false);
 
   const inTg = insideTelegramWebApp();
+  const isGuest = !userId || userId === 'guest' || !initData;
+
+  const imageStatus = useMemo(() => {
+    const img = draft.cardImage.trim();
+    if (!img) return null;
+    if (img.startsWith('data:')) {
+      return {
+        kind: 'overlay' as const,
+        text: 'в оверлее (только на этом устройстве)',
+      };
+    }
+    if (img.startsWith('/cards/')) {
+      return {
+        kind: 'path' as const,
+        text: `путь ${img} — файл должен лежать в public/cards/ на сервере`,
+      };
+    }
+    if (img.startsWith('https://') || img.startsWith('http://')) {
+      return {
+        kind: 'url' as const,
+        text: 'внешний URL (должен открываться как картинка)',
+      };
+    }
+    return {
+      kind: 'other' as const,
+      text: 'путь/URL — проверь, что файл доступен на проде',
+    };
+  }, [draft.cardImage]);
+
+  const suggestedCardsPath = lastImageFileName
+    ? `/cards/${lastImageFileName}`
+    : draft.cardImage.startsWith('/cards/')
+      ? draft.cardImage
+      : '/cards/name.webp';
 
   const stand = data.stands.find((s) => s.id === standId);
   const shelf = stand?.shelves.find((s) => s.id === shelfId) ?? null;
@@ -127,6 +166,8 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
   const selectCard = (id: string) => {
     setCardId(id);
     setImgBroken(false);
+    setShowDeployChecklist(false);
+    setLastImageFileName(null);
     if (!book) return;
     for (const page of book.pages) {
       const c = page.cards.find((x) => x.id === id);
@@ -146,13 +187,15 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
   const onPickImage = (file: File | null) => {
     if (!file || !cardId) return;
     const safe = file.name.replace(/[^\w.\-]+/g, '_');
+    setLastImageFileName(safe);
+    setShowDeployChecklist(true);
     if (file.size > MAX_DATA_URL_BYTES) {
       downloadBinaryFile(file, safe);
       const path = `/cards/${safe}`;
       const next = updateCard(data, cardId, { image: path });
       persist(
         next,
-        `Файл большой (${Math.round(file.size / 1024)} KB). Скачан — положи в public/cards/. В JSON: ${path}`,
+        `Сохранено на этом устройстве. Файл «${safe}» скачан — положи в public/cards/.`,
       );
       setDraft((d) => ({ ...d, cardImage: path }));
       setImgBroken(false);
@@ -166,10 +209,50 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
       downloadBinaryFile(file, safe);
       persist(
         updateCard(data, cardId, { image: dataUrl }),
-        `Превью в оверлее + файл «${safe}» скачан для public/cards/`,
+        `Сохранено на этом устройстве. Превью тут; файл «${safe}» скачан для public/cards/.`,
       );
     };
     reader.readAsDataURL(file);
+  };
+
+  const saveCard = () => {
+    if (!card) return;
+    const image = draft.cardImage.trim();
+    const next = updateCard(data, card.id, {
+      name: draft.cardName.trim() || '—',
+      description: draft.cardDesc,
+      image,
+      rarity: draft.cardRarity,
+    });
+    persist(next, 'Сохранено на этом устройстве');
+    setShowDeployChecklist(true);
+  };
+
+  const redownloadImage = () => {
+    const img = draft.cardImage.trim();
+    const name = lastImageFileName ?? 'card.webp';
+    if (img.startsWith('data:')) {
+      downloadDataUrlAsFile(img, name);
+      setNote(`Файл «${name}» скачан ещё раз — положи в public/cards/`);
+      return;
+    }
+    setNote(
+      'Нет data URL для повторной загрузки. Выбери файл снова или положи свой файл в public/cards/.',
+    );
+  };
+
+  const useCardsPath = () => {
+    if (!lastImageFileName) return;
+    const path = `/cards/${lastImageFileName}`;
+    setDraft((d) => ({ ...d, cardImage: path }));
+    setImgBroken(false);
+    if (cardId) {
+      persist(
+        updateCard(data, cardId, { image: path }),
+        `Путь в оверлее: ${path}. Файл всё ещё нужен в public/cards/ + деплой.`,
+      );
+      setShowDeployChecklist(true);
+    }
   };
 
   const onGrant = async () => {
@@ -219,6 +302,26 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
   return (
     <section className={`viewEnter ${styles.root}`}>
       <Header title="Админка" subtitle="Контент · выдача" onBack={onBack} />
+
+      {isGuest ? (
+        <div className={styles.warnBanner} role="status">
+          <strong>Ты не в Telegram Mini App</strong>
+          <span>
+            Профиль здесь = <code>guest</code>, не твой Telegram ID на телефоне.
+            Монеты/коллекция на ПК и в TG — разные. Чтобы править «как админ из
+            аккаунта», открывай игру из бота в Telegram.
+          </span>
+        </div>
+      ) : null}
+
+      <div className={styles.infoBanner} role="note">
+        <strong>Сохранение только на этом устройстве</strong>
+        <span>
+          «Сохранить карту» пишет в localStorage этого браузера. На телефоне и у
+          игроков картинка появится только после: файл в{' '}
+          <code>public/cards/</code> → Скачать JSON → push / Vercel.
+        </span>
+      </div>
 
       <div className={styles.tabs} role="tablist">
         <button
@@ -601,9 +704,19 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
                     )}
                     {draft.cardImage.startsWith('data:') ? (
                       <p className={styles.note}>
-                        Картинка уже в оверлее (превью для тебя). Для всех
-                        игроков — положи скачанный файл в public/cards/ + JSON +
-                        деплой.
+                        Картинка в оверлее (превью только тут). Для телефона —
+                        см. чеклист после сохранения.
+                      </p>
+                    ) : null}
+                    {imageStatus ? (
+                      <p
+                        className={
+                          imageStatus.kind === 'overlay'
+                            ? styles.statusOverlay
+                            : styles.statusPath
+                        }
+                      >
+                        Статус: {imageStatus.text}
                       </p>
                     ) : null}
                   </div>
@@ -627,6 +740,15 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
                       }}
                     />
                   </label>
+                  {draft.cardImage.startsWith('data:') && lastImageFileName ? (
+                    <Button
+                      fullWidth
+                      variant="ghost"
+                      onClick={useCardsPath}
+                    >
+                      Поставить путь {suggestedCardsPath} для деплоя
+                    </Button>
+                  ) : null}
                   <p className={styles.hint}>
                     Яндекс.Диск / Google Drive обычно не работают: там ссылка на
                     страницу, а нужна прямая картинка или файл в{' '}
@@ -667,22 +789,56 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
                       ))}
                     </select>
                   </label>
-                  <Button
-                    fullWidth
-                    onClick={() => {
-                      persist(
-                        updateCard(data, card.id, {
-                          name: draft.cardName.trim() || '—',
-                          description: draft.cardDesc,
-                          image: draft.cardImage.trim(),
-                          rarity: draft.cardRarity,
-                        }),
-                        'Карта сохранена',
-                      );
-                    }}
-                  >
+                  <Button fullWidth onClick={saveCard}>
                     Сохранить карту
                   </Button>
+
+                  {showDeployChecklist ? (
+                    <div className={styles.checklist} role="status">
+                      <p className={styles.checklistTitle}>
+                        Сохранено на этом устройстве
+                      </p>
+                      <ol className={styles.checklistSteps}>
+                        <li>
+                          Положи файл в <code>public/cards/</code>
+                          {lastImageFileName
+                            ? ` (имя: ${lastImageFileName})`
+                            : ''}
+                        </li>
+                        <li>
+                          В карте путь <code>{suggestedCardsPath}</code> (не
+                          data URL)
+                        </li>
+                        <li>
+                          «Скачать JSON» → замени{' '}
+                          <code>src/data/content.json</code> → push → Vercel
+                        </li>
+                      </ol>
+                      <div className={styles.checklistActions}>
+                        <Button
+                          fullWidth
+                          variant="secondary"
+                          onClick={() => {
+                            downloadContentJson(data);
+                            setNote(
+                              'content.json скачан — замени src/data/content.json и задеплой',
+                            );
+                          }}
+                        >
+                          Скачать JSON
+                        </Button>
+                        {draft.cardImage.startsWith('data:') ? (
+                          <Button
+                            fullWidth
+                            variant="ghost"
+                            onClick={redownloadImage}
+                          >
+                            Скачать файл картинки ещё раз
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
