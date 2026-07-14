@@ -7,6 +7,13 @@ export interface TelegramUser {
   username?: string;
 }
 
+type SafeArea = {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+};
+
 type TelegramWebApp = {
   initData?: string;
   initDataUnsafe?: {
@@ -15,9 +22,12 @@ type TelegramWebApp = {
   };
   platform?: string;
   viewportStableHeight?: number;
+  safeAreaInset?: SafeArea;
+  contentSafeAreaInset?: SafeArea;
   ready?: () => void;
   expand?: () => void;
   requestFullscreen?: () => void;
+  exitFullscreen?: () => void;
   disableVerticalSwipes?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
@@ -36,7 +46,23 @@ function getWebApp(): TelegramWebApp | null {
   }
 }
 
-function syncViewportHeight(app: TelegramWebApp) {
+function setCssPx(name: string, value: number | undefined) {
+  const px = typeof value === 'number' && value > 0 ? `${value}px` : '0px';
+  document.documentElement.style.setProperty(name, px);
+}
+
+function syncSafeAreas(app: TelegramWebApp) {
+  const safe = app.safeAreaInset;
+  const content = app.contentSafeAreaInset;
+  setCssPx('--tg-safe-area-inset-top', safe?.top);
+  setCssPx('--tg-safe-area-inset-bottom', safe?.bottom);
+  setCssPx('--tg-safe-area-inset-left', safe?.left);
+  setCssPx('--tg-safe-area-inset-right', safe?.right);
+  setCssPx('--tg-content-safe-area-inset-top', content?.top);
+  setCssPx('--tg-content-safe-area-inset-bottom', content?.bottom);
+  setCssPx('--tg-content-safe-area-inset-left', content?.left);
+  setCssPx('--tg-content-safe-area-inset-right', content?.right);
+
   const h = app.viewportStableHeight;
   if (typeof h === 'number' && h > 0) {
     document.documentElement.style.setProperty(
@@ -72,16 +98,18 @@ export function useTelegram() {
       // ignore
     }
 
+    // Expand to usable height, but do NOT requestFullscreen —
+    // fullscreen draws under iOS status bar and Telegram chrome.
     try {
-      app.expand?.();
+      app.exitFullscreen?.();
     } catch {
       // ignore
     }
 
     try {
-      app.requestFullscreen?.();
+      app.expand?.();
     } catch {
-      // Bot API 8+ only
+      // ignore
     }
 
     try {
@@ -102,10 +130,12 @@ export function useTelegram() {
       // ignore
     }
 
-    syncViewportHeight(app);
-    const onViewport = () => syncViewportHeight(app);
+    syncSafeAreas(app);
+    const onLayout = () => syncSafeAreas(app);
     try {
-      app.onEvent?.('viewportChanged', onViewport);
+      app.onEvent?.('viewportChanged', onLayout);
+      app.onEvent?.('safeAreaChanged', onLayout);
+      app.onEvent?.('contentSafeAreaChanged', onLayout);
     } catch {
       // ignore
     }
@@ -114,7 +144,9 @@ export function useTelegram() {
 
     return () => {
       try {
-        app.offEvent?.('viewportChanged', onViewport);
+        app.offEvent?.('viewportChanged', onLayout);
+        app.offEvent?.('safeAreaChanged', onLayout);
+        app.offEvent?.('contentSafeAreaChanged', onLayout);
       } catch {
         // ignore
       }

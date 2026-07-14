@@ -2,7 +2,9 @@
   position: relative;
   min-height: 100%;
   background: linear-gradient(180deg, #141821 0%, var(--bg-deep) 75%);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .main {
@@ -10,6 +12,38 @@
   z-index: 1;
   max-width: 480px;
   margin: 0 auto;
-  padding: 14px 18px 40px;
   min-height: 100%;
+  /* Keep TopBar / Header below notch, status bar, and Telegram chrome */
+  padding-top: calc(
+    12px +
+      max(
+        var(--tg-content-safe-area-inset-top, 0px),
+        var(--tg-safe-area-inset-top, 0px),
+        env(safe-area-inset-top, 0px)
+      )
+  );
+  padding-right: calc(
+    18px +
+      max(
+        var(--tg-content-safe-area-inset-right, 0px),
+        var(--tg-safe-area-inset-right, 0px),
+        env(safe-area-inset-right, 0px)
+      )
+  );
+  padding-bottom: calc(
+    36px +
+      max(
+        var(--tg-content-safe-area-inset-bottom, 0px),
+        var(--tg-safe-area-inset-bottom, 0px),
+        env(safe-area-inset-bottom, 0px)
+      )
+  );
+  padding-left: calc(
+    18px +
+      max(
+        var(--tg-content-safe-area-inset-left, 0px),
+        var(--tg-safe-area-inset-left, 0px),
+        env(safe-area-inset-left, 0px)
+      )
+  );
 }
