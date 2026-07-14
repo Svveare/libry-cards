@@ -124,7 +124,13 @@ export function RewardModal({ reward, onClose }: RewardModalProps) {
         >
           <div className={styles.art}>
             {card.image ? (
-              <img src={card.image} alt={displayName} className={styles.image} />
+              <img
+                src={card.image}
+                alt={displayName}
+                className={styles.image}
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
               <span className={styles.initials}>
                 {getCardInitials(displayName)}

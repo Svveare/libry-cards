@@ -35,7 +35,13 @@ export function CardSlot({ card, collected }: CardSlotProps) {
     >
       <div className={styles.art}>
         {card.image ? (
-          <img src={card.image} alt={card.name} className={styles.image} />
+          <img
+            src={card.image}
+            alt={card.name}
+            className={styles.image}
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <span className={styles.initials}>{getInitials(card.name)}</span>
         )}

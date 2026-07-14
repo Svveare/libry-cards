@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { config } from '../../content/loader';
 import { REFERRAL_INVITEE_COINS } from '../../utils/ink';
+import { buildReferralLink } from '../../utils/referralLink';
 import { Header } from '../ui/Header';
 import { Button } from '../ui/Button';
 import styles from './FriendsView.module.css';
@@ -17,10 +18,17 @@ export function FriendsView({
   onBack,
 }: FriendsViewProps) {
   const [copied, setCopied] = useState(false);
-  const bot = config.telegramBotUsername || 'librycards_bot';
-  const link = `https://t.me/${bot}?startapp=ref_${userId}`;
+  const isGuest = !userId || userId === 'guest';
+  const link = isGuest
+    ? null
+    : buildReferralLink(
+        config.telegramBotUsername || 'librycards_bot',
+        userId,
+        config.telegramMiniAppShortName,
+      );
 
   const copy = async () => {
+    if (!link) return;
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -31,6 +39,7 @@ export function FriendsView({
   };
 
   const share = () => {
+    if (!link) return;
     const tg = (
       window as unknown as {
         Telegram?: { WebApp?: { openTelegramLink?: (url: string) => void } };
@@ -61,18 +70,28 @@ export function FriendsView({
         <span className={styles.badgeHint}>синк с сервером позже</span>
       </div>
 
-      <div className={styles.linkBox}>
-        <p className={styles.link}>{link}</p>
-      </div>
+      {isGuest || !link ? (
+        <p className={styles.text}>
+          Открой приложение через бота @
+          {config.telegramBotUsername || 'librycards_bot'}, чтобы получить
+          ссылку.
+        </p>
+      ) : (
+        <>
+          <div className={styles.linkBox}>
+            <p className={styles.link}>{link}</p>
+          </div>
 
-      <div className={styles.actions}>
-        <Button fullWidth onClick={copy}>
-          {copied ? 'Скопировано' : 'Скопировать ссылку'}
-        </Button>
-        <Button fullWidth variant="secondary" onClick={share}>
-          Поделиться
-        </Button>
-      </div>
+          <div className={styles.actions}>
+            <Button fullWidth onClick={copy}>
+              {copied ? 'Скопировано' : 'Скопировать ссылку'}
+            </Button>
+            <Button fullWidth variant="secondary" onClick={share}>
+              Поделиться
+            </Button>
+          </div>
+        </>
+      )}
     </section>
   );
 }

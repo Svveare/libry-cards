@@ -118,6 +118,8 @@ export interface AppConfig {
     enabled: boolean;
   };
   telegramBotUsername: string;
+  /** Named Mini App path in t.me links (e.g. "app"). Empty = Main Mini App format. */
+  telegramMiniAppShortName?: string;
   daily: {
     cooldownHours: number;
     moneyTiers: MoneyTier[];

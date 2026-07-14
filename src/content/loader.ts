@@ -193,7 +193,7 @@ export function getShelfProgress(
 }
 
 /**
- * Soft channel gate (local confirm). Server getChatMember — later.
+ * Channel gate for daily/chest. Real check via /api/check-subscription (getChatMember).
  */
 export function canAccessChannelFeature(
   channelConfirmed: boolean,

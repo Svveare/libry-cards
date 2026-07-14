@@ -14,10 +14,15 @@ type TelegramWebApp = {
     start_param?: string;
   };
   platform?: string;
+  viewportStableHeight?: number;
   ready?: () => void;
   expand?: () => void;
+  requestFullscreen?: () => void;
+  disableVerticalSwipes?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
+  onEvent?: (event: string, callback: () => void) => void;
+  offEvent?: (event: string, callback: () => void) => void;
   openTelegramLink?: (url: string) => void;
   openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
 };
@@ -28,6 +33,16 @@ function getWebApp(): TelegramWebApp | null {
     return tg?.WebApp ?? null;
   } catch {
     return null;
+  }
+}
+
+function syncViewportHeight(app: TelegramWebApp) {
+  const h = app.viewportStableHeight;
+  if (typeof h === 'number' && h > 0) {
+    document.documentElement.style.setProperty(
+      '--tg-viewport-stable-height',
+      `${h}px`,
+    );
   }
 }
 
@@ -46,32 +61,64 @@ export function useTelegram() {
 
   useEffect(() => {
     const app = getWebApp();
-    if (app) {
+    if (!app) {
+      setIsReady(true);
+      return;
+    }
+
+    try {
+      app.ready?.();
+    } catch {
+      // ignore
+    }
+
+    try {
+      app.expand?.();
+    } catch {
+      // ignore
+    }
+
+    try {
+      app.requestFullscreen?.();
+    } catch {
+      // Bot API 8+ only
+    }
+
+    try {
+      app.disableVerticalSwipes?.();
+    } catch {
+      // ignore
+    }
+
+    try {
+      app.setHeaderColor?.('#0D0F14');
+    } catch {
+      // Outside Telegram / old version
+    }
+
+    try {
+      app.setBackgroundColor?.('#0D0F14');
+    } catch {
+      // ignore
+    }
+
+    syncViewportHeight(app);
+    const onViewport = () => syncViewportHeight(app);
+    try {
+      app.onEvent?.('viewportChanged', onViewport);
+    } catch {
+      // ignore
+    }
+
+    setIsReady(true);
+
+    return () => {
       try {
-        app.ready?.();
+        app.offEvent?.('viewportChanged', onViewport);
       } catch {
         // ignore
       }
-
-      if (app.initData) {
-        try {
-          app.expand?.();
-        } catch {
-          // ignore
-        }
-        try {
-          app.setHeaderColor?.('#0D0F14');
-        } catch {
-          // Outside Telegram / old version — ignore
-        }
-        try {
-          app.setBackgroundColor?.('#0D0F14');
-        } catch {
-          // ignore
-        }
-      }
-    }
-    setIsReady(true);
+    };
   }, []);
 
   return {
@@ -80,6 +127,7 @@ export function useTelegram() {
     user,
     insideTelegram,
     webApp,
+    initData: webApp?.initData ?? '',
     startParam,
     openTelegramLink: (url: string) => {
       const app = getWebApp();

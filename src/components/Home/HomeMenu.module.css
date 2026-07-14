@@ -26,23 +26,23 @@
     border-color 0.14s ease,
     transform 0.12s var(--ease-out),
     background 0.14s ease;
-  animation: rowIn 0.45s var(--ease-out) both;
+  animation: rowIn 0.3s var(--ease-out) both;
 }
 
 .item:nth-child(1) {
-  animation-delay: 0.04s;
+  animation-delay: 0.02s;
 }
 .item:nth-child(2) {
-  animation-delay: 0.08s;
+  animation-delay: 0.04s;
 }
 .item:nth-child(3) {
-  animation-delay: 0.12s;
+  animation-delay: 0.06s;
 }
 .item:nth-child(4) {
-  animation-delay: 0.16s;
+  animation-delay: 0.08s;
 }
 .item:nth-child(5) {
-  animation-delay: 0.2s;
+  animation-delay: 0.1s;
 }
 
 @keyframes rowIn {

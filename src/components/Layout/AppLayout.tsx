@@ -8,7 +8,6 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className={styles.layout}>
-      <div className={styles.atmosphere} aria-hidden />
       <main className={styles.main}>{children}</main>
     </div>
   );

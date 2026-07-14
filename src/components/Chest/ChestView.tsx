@@ -26,12 +26,13 @@ interface ChestViewProps {
   onCommit: (reward: DailyReward) => void;
   onRewardRevealed: (reward: DailyReward) => void;
   onOpenChannel: (url: string) => void;
-  onConfirmChannel: () => void;
+  onSyncSubscription: (subscribed: boolean) => void;
+  initData: string;
 }
 
 type Phase = 'idle' | 'picking' | 'done';
 
-const REVEAL_MS = 980;
+const REVEAL_MS = 520;
 
 function TreasureChest({
   open,
@@ -71,7 +72,8 @@ export function ChestView({
   onCommit,
   onRewardRevealed,
   onOpenChannel,
-  onConfirmChannel,
+  onSyncSubscription,
+  initData,
 }: ChestViewProps) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [slots, setSlots] = useState<ChestSlot[]>([]);
@@ -175,10 +177,11 @@ export function ChestView({
           {channelRequired ? (
             <ChannelGate
               channelConfirmed={channelConfirmed}
+              initData={initData}
               onOpenChannel={() => onOpenChannel(getChannelUrl())}
-              onConfirmChannel={() => {
-                onConfirmChannel();
-                setMessage(null);
+              onSyncSubscription={(subscribed) => {
+                onSyncSubscription(subscribed);
+                if (subscribed) setMessage(null);
               }}
             />
           ) : null}

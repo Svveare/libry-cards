@@ -93,14 +93,25 @@ export function useProgress(userId: string) {
     return { status: 'ok', reward: rollDailyReward(prev.collectedCardIds) };
   }, []);
 
-  const confirmChannelSubscription = useCallback(() => {
-    const prev = progressRef.current;
-    if (prev.channelConfirmedAt) return;
-    commit({
-      ...prev,
-      channelConfirmedAt: new Date().toISOString(),
-    });
-  }, [commit]);
+  const syncChannelSubscription = useCallback(
+    (subscribed: boolean) => {
+      const prev = progressRef.current;
+      if (subscribed) {
+        if (prev.channelConfirmedAt) return;
+        commit({
+          ...prev,
+          channelConfirmedAt: new Date().toISOString(),
+        });
+        return;
+      }
+      if (!prev.channelConfirmedAt) return;
+      commit({
+        ...prev,
+        channelConfirmedAt: null,
+      });
+    },
+    [commit],
+  );
 
   const commitDailyOpen = useCallback(
     (reward: DailyReward) => {
@@ -404,7 +415,7 @@ export function useProgress(userId: string) {
     progress,
     previewDailyOpen,
     commitDailyOpen,
-    confirmChannelSubscription,
+    syncChannelSubscription,
     startChest,
     commitChestOpen,
     commitReward,

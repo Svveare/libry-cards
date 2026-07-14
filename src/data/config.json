@@ -6,6 +6,7 @@
     "enabled": true
   },
   "telegramBotUsername": "librycards_bot",
+  "telegramMiniAppShortName": "app",
   "daily": {
     "cooldownHours": 24,
     "unlimitedOpens": false,

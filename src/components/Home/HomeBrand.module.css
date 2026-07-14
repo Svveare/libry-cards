@@ -1,7 +1,7 @@
 .brand {
   text-align: center;
   padding: 8px 0 20px;
-  animation: brandIn 0.55s var(--ease-out);
+  animation: brandIn 0.32s var(--ease-out);
 }
 
 @keyframes brandIn {
@@ -55,7 +55,7 @@
   letter-spacing: -0.04em;
   color: var(--gold-bright);
   line-height: 1;
-  text-shadow: 0 0 40px rgba(242, 212, 138, 0.22);
+  text-shadow: none;
 }
 
 .tagline {

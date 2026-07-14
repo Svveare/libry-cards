@@ -7,7 +7,7 @@ import styles from './CaseStrip.module.css';
 
 const ITEM_WIDTH = 100;
 const ITEM_GAP = 8;
-const ANIM_MS = 2800;
+const ANIM_MS = 1600;
 const JITTER_INSET = 12;
 
 interface CaseStripProps {
@@ -79,7 +79,7 @@ export function CaseStrip({ items, spinning, onSpinEnd }: CaseStripProps) {
             {
               transform: `translate3d(${-offset}px, 0, 0)`,
               transition: animate
-                ? `transform ${ANIM_MS}ms cubic-bezier(0.05, 0.85, 0.05, 1)`
+                ? `transform ${ANIM_MS}ms ease-out`
                 : 'none',
               gap: ITEM_GAP,
             } as CSSProperties

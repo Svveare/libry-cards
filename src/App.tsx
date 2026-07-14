@@ -6,6 +6,7 @@ import { HomeBrand } from './components/Home/HomeBrand';
 import { TopBar } from './components/Home/TopBar';
 import { HomeMenu } from './components/Home/HomeMenu';
 import { Header } from './components/ui/Header';
+import { checkChannelSubscription } from './utils/checkSubscription';
 import { useTelegram } from './hooks/useTelegram';
 import { useProgress } from './hooks/useProgress';
 
@@ -99,12 +100,13 @@ function screenNeedsContent(screen: Screen): boolean {
 }
 
 function App() {
-  const { userId, user, startParam, openTelegramLink } = useTelegram();
+  const { userId, user, startParam, openTelegramLink, initData, insideTelegram } =
+    useTelegram();
   const {
     progress,
     previewDailyOpen,
     commitDailyOpen,
-    confirmChannelSubscription,
+    syncChannelSubscription,
     startChest,
     commitChestOpen,
     commitReward,
@@ -159,6 +161,18 @@ function App() {
     const refId = startParam.slice(4);
     if (refId) applyReferralParam(refId);
   }, [startParam, applyReferralParam]);
+
+  useEffect(() => {
+    if (!insideTelegram || !initData || !config.telegramChannel.enabled) return;
+    let cancelled = false;
+    void checkChannelSubscription(initData).then((result) => {
+      if (cancelled || !result.ok) return;
+      syncChannelSubscription(result.subscribed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [insideTelegram, initData, syncChannelSubscription]);
 
   const collectedSet = useMemo(
     () => new Set(progress.collectedCardIds),
@@ -223,7 +237,8 @@ function App() {
               onCommit={commitDailyOpen}
               onRewardRevealed={setRevealedReward}
               onOpenChannel={openTelegramLink}
-              onConfirmChannel={confirmChannelSubscription}
+              onSyncSubscription={syncChannelSubscription}
+              initData={initData}
             />
           </>
         );
@@ -248,7 +263,8 @@ function App() {
               onCommit={commitReward}
               onRewardRevealed={setRevealedReward}
               onOpenChannel={openTelegramLink}
-              onConfirmChannel={confirmChannelSubscription}
+              onSyncSubscription={syncChannelSubscription}
+              initData={initData}
             />
           </>
         );

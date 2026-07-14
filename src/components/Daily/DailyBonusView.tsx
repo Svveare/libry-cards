@@ -21,7 +21,8 @@ interface DailyBonusViewProps {
   onCommit: (reward: DailyReward) => void;
   onRewardRevealed: (reward: DailyReward) => void;
   onOpenChannel: (url: string) => void;
-  onConfirmChannel: () => void;
+  onSyncSubscription: (subscribed: boolean) => void;
+  initData: string;
 }
 
 export function DailyBonusView({
@@ -31,7 +32,8 @@ export function DailyBonusView({
   onCommit,
   onRewardRevealed,
   onOpenChannel,
-  onConfirmChannel,
+  onSyncSubscription,
+  initData,
 }: DailyBonusViewProps) {
   const [message, setMessage] = useState<string | null>(null);
   const getRemaining = useCallback(
@@ -92,10 +94,11 @@ export function DailyBonusView({
       {channelRequired ? (
         <ChannelGate
           channelConfirmed={channelConfirmed}
+          initData={initData}
           onOpenChannel={() => onOpenChannel(getChannelUrl())}
-          onConfirmChannel={() => {
-            onConfirmChannel();
-            setMessage(null);
+          onSyncSubscription={(subscribed) => {
+            onSyncSubscription(subscribed);
+            if (subscribed) setMessage(null);
           }}
         />
       ) : null}
