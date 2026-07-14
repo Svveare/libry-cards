@@ -10,7 +10,7 @@
 | `WEBAPP_URL` | `https://libry-cards-xxx.vercel.app` | URL Mini App на Vercel |
 | `ADMIN_IDS` | `1920121195` | через запятую |
 | `REFERRAL_BONUS` | `25` | монеты приглашённому |
-| `PORT` | `8080` | порт HTTP (Bothost часто задаёт сам) |
+| `PORT` | `3000` | должен совпадать с портом веб-приложения Bothost |
 | `DATA_PATH` | `data/store.json` | файл хранилища |
 
 ## Старт

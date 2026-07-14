@@ -135,7 +135,7 @@
     "startingCoins": 50
   },
   "adminUserIds": ["1920121195"],
-  "backendBaseUrl": "",
+  "backendBaseUrl": "https://bot-1784027666-4590-svveare.bothost.tech",
   "dev": {
     "grantAllCards": false
   }

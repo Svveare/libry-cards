@@ -32,7 +32,7 @@ ADMIN_IDS = {
 REFERRAL_BONUS = int(os.environ.get("REFERRAL_BONUS", "25"))
 DATA_PATH = Path(os.environ.get("DATA_PATH", "data/store.json"))
 HOST = os.environ.get("HOST", "0.0.0.0")
-PORT = int(os.environ.get("PORT", os.environ.get("BOTHOST_PORT", "8080")))
+PORT = int(os.environ.get("PORT", os.environ.get("BOTHOST_PORT", "3000")))
 PUBLIC_BASE = os.environ.get("PUBLIC_BASE", "").rstrip("/")  # https://xxx.bothost.ru
 
 if not BOT_TOKEN:
