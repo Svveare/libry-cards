@@ -26,7 +26,7 @@
   color: var(--bg-deep);
   background: linear-gradient(135deg, var(--gold-bright), var(--gold));
   box-shadow: 0 6px 20px rgba(224, 184, 74, 0.35);
-  animation: badgeIn 0.65s var(--ease-out) both;
+  animation: badgeIn 0.4s var(--ease-out) both;
 }
 
 .streak {
@@ -97,11 +97,11 @@
 @keyframes badgeIn {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.94);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
