@@ -1,18 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getBotToken, getWebAppUrl, telegramCall } from './_lib/telegram';
-
-type TgUpdate = {
-  message?: {
-    chat: { id: number };
-    text?: string;
-  };
-  callback_query?: {
-    id: string;
-    data?: string;
-    message?: { chat: { id: number }; message_id: number };
-    from: { id: number };
-  };
-};
+import { getBotToken, getWebAppUrl, telegramCall } from './_lib/telegram.js';
 
 const START_CAPTION =
   '<b>Libry Cards</b> — собирай уникальные карточки прямо в Telegram!\n\n' +
@@ -28,26 +14,24 @@ const ABOUT_TEXT =
   '• Задания, достижения и рефералка для друзей\n\n' +
   'Подпишись на канал и жми <b>Играть</b> — всё в Mini App.';
 
-function playKeyboard(webAppUrl: string) {
-  const rows: unknown[][] = [];
+function playKeyboard(webAppUrl) {
+  const rows = [];
   if (webAppUrl) {
-    rows.push([
-      { text: '🎮 Играть', web_app: { url: webAppUrl } },
-    ]);
+    rows.push([{ text: '🎮 Играть', web_app: { url: webAppUrl } }]);
   }
   rows.push([{ text: 'Что умеет этот бот?', callback_data: 'about' }]);
   return { inline_keyboard: rows };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false });
+    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
 
   try {
     const botToken = getBotToken();
     const webAppUrl = getWebAppUrl();
-    const update = (req.body || {}) as TgUpdate;
+    const update = req.body || {};
 
     if (update.callback_query) {
       const cq = update.callback_query;
@@ -66,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const msg = update.message;
-    const text = msg?.text?.trim() || '';
+    const text = (msg?.text || '').trim();
     if (msg && (text === '/start' || text.startsWith('/start '))) {
       const chatId = msg.chat.id;
       const photoUrl = webAppUrl
@@ -94,6 +78,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('bot-webhook', err);
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({
+      ok: true,
+      error: err instanceof Error ? err.message : 'error',
+    });
   }
 }

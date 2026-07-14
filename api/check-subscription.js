@@ -1,17 +1,17 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   getBotToken,
   getChannelUsername,
   getChatMemberStatus,
   isSubscribedStatus,
   validateInitData,
-} from './_lib/telegram';
+} from './_lib/telegram.js';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
 
@@ -19,15 +19,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-
   try {
     const initData =
       typeof req.body === 'object' && req.body
-        ? String((req.body as { initData?: string }).initData || '')
+        ? String(req.body.initData || '')
         : '';
     if (!initData) {
-      return res.status(400).json({ ok: false, subscribed: false, error: 'no_init_data' });
+      return res
+        .status(400)
+        .json({ ok: false, subscribed: false, error: 'no_init_data' });
     }
 
     const botToken = getBotToken();
@@ -60,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({
       ok: false,
       subscribed: false,
-      error: 'server_error',
+      error: err instanceof Error ? err.message : 'server_error',
     });
   }
 }

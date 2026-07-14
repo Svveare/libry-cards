@@ -1,42 +1,35 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-export function getBotToken(): string {
+export function getBotToken() {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) throw new Error('TELEGRAM_BOT_TOKEN is not set');
   return token;
 }
 
-export function getChannelUsername(): string {
+export function getChannelUsername() {
   const raw =
-    process.env.TELEGRAM_CHANNEL_USERNAME?.trim() ||
-    process.env.VITE_TELEGRAM_CHANNEL_USERNAME?.trim() ||
-    '@librycards';
+    process.env.TELEGRAM_CHANNEL_USERNAME?.trim() || '@librycards';
   return raw.startsWith('@') ? raw : `@${raw}`;
 }
 
-export function getWebAppUrl(): string {
+export function getWebAppUrl() {
   const url =
     process.env.TELEGRAM_WEBAPP_URL?.trim() ||
-    process.env.VITE_WEBAPP_URL?.trim() ||
-    '';
+    'https://libry-cards.vercel.app';
   return url.replace(/\/$/, '');
 }
 
 /** Validate Telegram Mini App initData (WebAppData). */
-export function validateInitData(
-  initData: string,
-  botToken: string,
-  maxAgeSeconds = 86400,
-): { ok: true; userId: number } | { ok: false; reason: string } {
+export function validateInitData(initData, botToken, maxAgeSeconds = 86400) {
   try {
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
     if (!hash) return { ok: false, reason: 'missing_hash' };
 
-    const pairs: string[] = [];
-    params.forEach((value, key) => {
+    const pairs = [];
+    for (const [key, value] of params.entries()) {
       if (key !== 'hash') pairs.push(`${key}=${value}`);
-    });
+    }
     pairs.sort();
     const dataCheckString = pairs.join('\n');
 
@@ -58,7 +51,7 @@ export function validateInitData(
 
     const userRaw = params.get('user');
     if (!userRaw) return { ok: false, reason: 'no_user' };
-    const user = JSON.parse(userRaw) as { id?: number };
+    const user = JSON.parse(userRaw);
     if (!user.id) return { ok: false, reason: 'no_user_id' };
 
     return { ok: true, userId: user.id };
@@ -67,22 +60,16 @@ export function validateInitData(
   }
 }
 
-export async function getChatMemberStatus(
-  botToken: string,
-  channel: string,
-  userId: number,
-): Promise<string | null> {
-  const url = `https://api.telegram.org/bot${botToken}/getChatMember`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: channel, user_id: userId }),
-  });
-  const data = (await res.json()) as {
-    ok?: boolean;
-    result?: { status?: string };
-    description?: string;
-  };
+export async function getChatMemberStatus(botToken, channel, userId) {
+  const res = await fetch(
+    `https://api.telegram.org/bot${botToken}/getChatMember`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: channel, user_id: userId }),
+    },
+  );
+  const data = await res.json();
   if (!data.ok || !data.result?.status) {
     console.warn('getChatMember failed', data.description);
     return null;
@@ -90,7 +77,7 @@ export async function getChatMemberStatus(
   return data.result.status;
 }
 
-export function isSubscribedStatus(status: string | null): boolean {
+export function isSubscribedStatus(status) {
   return (
     status === 'creator' ||
     status === 'administrator' ||
@@ -99,11 +86,7 @@ export function isSubscribedStatus(status: string | null): boolean {
   );
 }
 
-export async function telegramCall(
-  botToken: string,
-  method: string,
-  body: Record<string, unknown>,
-): Promise<unknown> {
+export async function telegramCall(botToken, method, body) {
   const res = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
