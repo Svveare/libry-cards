@@ -1,19 +1,35 @@
 .empty {
   aspect-ratio: 3 / 4;
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  border: 1px dashed rgba(139, 146, 152, 0.25);
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(42, 35, 28, 0.9), transparent),
+    var(--surface);
+  border: 1px dashed rgba(201, 168, 76, 0.22);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35);
 }
 
 .card {
   aspect-ratio: 3 / 4;
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  border: 2px solid var(--card-rarity);
-  box-shadow: var(--shadow-card);
+  border-radius: 10px;
+  background: #0e0c0a;
+  border: 1px solid color-mix(in srgb, var(--card-rarity) 55%, var(--gold-dim));
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.18),
+    var(--shadow-card);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+  border-radius: inherit;
+  z-index: 2;
 }
 
 .art {
@@ -21,36 +37,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--card-rarity) 35%, var(--surface)) 0%,
-    var(--surface) 100%
-  );
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(232, 208, 144, 0.08), transparent 60%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--card-rarity) 22%, #16120e) 0%,
+      #0a0908 100%
+    );
   overflow: hidden;
+  position: relative;
 }
 
 .image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .initials {
+  font-family: var(--font-display);
   font-size: 28px;
   font-weight: 700;
-  color: var(--card-rarity);
-  opacity: 0.9;
+  color: color-mix(in srgb, var(--card-rarity) 80%, var(--gold-bright));
+  opacity: 0.85;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
 .info {
-  padding: 10px 12px;
-  background: var(--surface);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 11px 11px;
+  background: linear-gradient(180deg, #16120e, #100e0c);
+  border-top: 1px solid rgba(201, 168, 76, 0.16);
+  position: relative;
+  z-index: 3;
 }
 
 .name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -58,9 +83,11 @@
 }
 
 .rarity {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--card-rarity);
-  font-weight: 500;
-  margin-top: 2px;
+  font-weight: 700;
+  margin-top: 3px;
   display: block;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }

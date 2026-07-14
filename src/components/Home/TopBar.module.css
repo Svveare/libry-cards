@@ -67,9 +67,9 @@
 }
 
 .bookmark {
-  border-color: rgba(212, 168, 83, 0.26);
+  border-color: rgba(201, 168, 76, 0.28);
   background:
-    linear-gradient(180deg, rgba(212, 168, 83, 0.1), transparent),
+    linear-gradient(180deg, rgba(201, 168, 76, 0.1), transparent),
     var(--surface);
 }
 

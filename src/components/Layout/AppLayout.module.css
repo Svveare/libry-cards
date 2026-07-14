@@ -1,10 +1,53 @@
 .layout {
   position: relative;
   min-height: 100%;
-  background: linear-gradient(180deg, #141821 0%, var(--bg-deep) 75%);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(230, 196, 138, 0.14), transparent 52%),
+    radial-gradient(ellipse 70% 40% at 100% 60%, rgba(42, 26, 18, 0.5), transparent 55%),
+    linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 72%);
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Soft moon / lamp glow — static, no animation */
+.atmosphere {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  width: 320px;
+  height: 280px;
+  margin-left: -160px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    circle,
+    rgba(232, 208, 144, 0.2) 0%,
+    rgba(201, 168, 76, 0.06) 42%,
+    transparent 70%
+  );
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 85% 75% at 50% 40%,
+    transparent 40%,
+    rgba(6, 5, 4, 0.55) 100%
+  );
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
 }
 
 .main {
@@ -13,7 +56,6 @@
   max-width: 480px;
   margin: 0 auto;
   min-height: 100%;
-  /* Keep TopBar / Header below notch, status bar, and Telegram chrome */
   padding-top: calc(
     12px +
       max(
@@ -31,7 +73,7 @@
       )
   );
   padding-bottom: calc(
-    36px +
+    40px +
       max(
         var(--tg-content-safe-area-inset-bottom, 0px),
         var(--tg-safe-area-inset-bottom, 0px),

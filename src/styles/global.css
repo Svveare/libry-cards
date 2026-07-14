@@ -23,7 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
 }
 
 button {
@@ -42,13 +42,13 @@ h1,
 h2 {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 @keyframes libryFadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -57,7 +57,7 @@ h2 {
 }
 
 .viewEnter {
-  animation: libryFadeIn 0.36s var(--ease-out);
+  animation: libryFadeIn 0.42s var(--ease-out);
 }
 
 .listStack {

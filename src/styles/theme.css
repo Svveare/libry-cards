@@ -1,35 +1,35 @@
 :root {
-  /* Atmosphere — warm night library */
-  --bg-deep: #07080c;
-  --bg-mid: #10131a;
-  --surface: #171a22;
-  --surface-hover: #1e222c;
-  --surface-raised: #242833;
-  --wood: #2c1c14;
-  --wood-light: #45301f;
-  --lamp: #f0c888;
-  --gold: #d4a853;
-  --gold-bright: #f2d48a;
-  --gold-dim: #a07830;
-  --text: #f6efe6;
-  --text-muted: #8f877c;
-  --text-soft: #b5aaa0;
-  --border: rgba(212, 168, 83, 0.14);
-  --border-strong: rgba(212, 168, 83, 0.32);
+  /* Oil night library — warm charcoal + surgical brass */
+  --bg-deep: #0a0908;
+  --bg-mid: #12100e;
+  --surface: #1a1612;
+  --surface-hover: #221c16;
+  --surface-raised: #2a231c;
+  --wood: #2a1a12;
+  --wood-light: #3d2818;
+  --lamp: #e6c48a;
+  --gold: #c9a84c;
+  --gold-bright: #e8d090;
+  --gold-dim: #8a6a2e;
+  --text: #f2efe8;
+  --text-muted: #9a9084;
+  --text-soft: #c4bbb0;
+  --border: rgba(201, 168, 76, 0.12);
+  --border-strong: rgba(201, 168, 76, 0.3);
 
-  --rarity-common: #a8b0bc;
-  --rarity-rare: #5b8fd9;
-  --rarity-epic: #9b6fd4;
-  --rarity-legendary: #e8b84a;
-  --rarity-mythic: #d978a8;
-  --rarity-secret: #5cbfa0;
+  --rarity-common: #b0a89c;
+  --rarity-rare: #6a8fbe;
+  --rarity-epic: #a07cc4;
+  --rarity-legendary: #d4af5a;
+  --rarity-mythic: #c47898;
+  --rarity-secret: #5cafa0;
 
   --font-display: 'Fraunces', 'Georgia', serif;
   --font-ui: 'Nunito Sans', system-ui, sans-serif;
 
   --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
   --radius-pill: 999px;
 
   --space-1: 4px;
@@ -39,10 +39,12 @@
   --space-5: 20px;
   --space-6: 28px;
 
-  --shadow-gold: 0 8px 28px rgba(212, 168, 83, 0.2);
-  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.4);
-  --shadow-shelf: inset 0 1px 0 rgba(255, 230, 180, 0.05);
+  --shadow-gold: 0 10px 32px rgba(201, 168, 76, 0.18);
+  --shadow-card: 0 14px 36px rgba(0, 0, 0, 0.5);
+  --shadow-shelf: inset 0 1px 0 rgba(232, 208, 144, 0.06);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --press: scale(0.985);
+
+  --grain-opacity: 0.045;
 }

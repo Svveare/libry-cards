@@ -35,7 +35,7 @@
 }
 
 .primary:hover:not(:disabled) {
-  box-shadow: 0 10px 32px rgba(212, 168, 83, 0.32);
+  box-shadow: 0 10px 32px rgba(201, 168, 76, 0.3);
 }
 
 .secondary {

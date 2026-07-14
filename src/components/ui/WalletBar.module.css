@@ -12,7 +12,7 @@
   padding: 8px 14px;
   border-radius: var(--radius-pill);
   background:
-    linear-gradient(180deg, rgba(212, 168, 83, 0.12), rgba(212, 168, 83, 0.02)),
+    linear-gradient(180deg, rgba(201, 168, 76, 0.12), rgba(201, 168, 76, 0.02)),
     var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-shelf);
@@ -23,7 +23,7 @@
   height: 7px;
   border-radius: 50%;
   background: var(--gold-bright);
-  box-shadow: 0 0 10px rgba(242, 212, 138, 0.55);
+  box-shadow: 0 0 10px rgba(232, 208, 144, 0.4);
 }
 
 .chip strong {
