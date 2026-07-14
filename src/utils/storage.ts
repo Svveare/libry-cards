@@ -1,13 +1,17 @@
 import type { BattlePassProgress, DayStats, UserProgress } from '../types';
 import { config, getAllCards } from '../content/loader';
 import { ALL_ACHIEVEMENT_IDS } from './achievements';
-import { defaultBattlePassProgress, BATTLE_PASS_SEASON_ID } from '../data/battlePass';
+import { defaultBattlePassProgress, currentBattlePassSeasonId } from '../data/battlePass';
 import { emptyDayStats, withCurrentDayStats } from './dayStats';
 import { utcDayKey } from './quests';
 
-const STORAGE_PREFIX = 'libry_progress_v8_';
+const STORAGE_PREFIX = 'libry_progress_v9_';
 /** Bump this to force a full client reset for all users. */
-const WIPE_FLAG = 'libry_wiped_deploy_v2';
+const WIPE_FLAG = 'libry_wiped_deploy_v3';
+/** After wipe, force one push of defaults so Bothost doesn't restore old snapshot. */
+const FORCE_PUSH_DEFAULTS_KEY = 'libry_force_push_defaults';
+
+let wipedThisSession = false;
 
 function defaultDayStats(): DayStats {
   return emptyDayStats(utcDayKey());
@@ -54,10 +58,10 @@ function parseBattlePass(raw: unknown): BattlePassProgress {
   const base = defaultBattlePassProgress();
   if (!raw || typeof raw !== 'object') return base;
   const p = raw as Partial<BattlePassProgress>;
-  const seasonId = typeof p.seasonId === 'string' ? p.seasonId : base.seasonId;
-  if (seasonId !== BATTLE_PASS_SEASON_ID) return base;
+  const seasonId = typeof p.seasonId === 'string' ? p.seasonId : '';
+  if (seasonId !== currentBattlePassSeasonId()) return base;
   return {
-    seasonId: BATTLE_PASS_SEASON_ID,
+    seasonId: currentBattlePassSeasonId(),
     xp: typeof p.xp === 'number' ? p.xp : 0,
     premium: Boolean(p.premium),
     claimedFree: Array.isArray(p.claimedFree)
@@ -97,14 +101,31 @@ function wipeProgressOnce(): void {
         key &&
         key.startsWith('libry_') &&
         !key.startsWith('libry_content_overlay') &&
-        key !== WIPE_FLAG
+        key !== WIPE_FLAG &&
+        key !== FORCE_PUSH_DEFAULTS_KEY
       ) {
         localStorage.removeItem(key);
       }
     }
     localStorage.setItem(WIPE_FLAG, '1');
+    localStorage.setItem(FORCE_PUSH_DEFAULTS_KEY, '1');
+    wipedThisSession = true;
   } catch {
     // ignore
+  }
+}
+
+export function wasProgressWipedThisSession(): boolean {
+  return wipedThisSession;
+}
+
+export function consumeForcePushDefaults(): boolean {
+  try {
+    if (localStorage.getItem(FORCE_PUSH_DEFAULTS_KEY) !== '1') return false;
+    localStorage.removeItem(FORCE_PUSH_DEFAULTS_KEY);
+    return true;
+  } catch {
+    return false;
   }
 }
 

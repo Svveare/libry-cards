@@ -52,8 +52,12 @@ MIME_EXT = {
 }
 
 
+STORE_SCHEMA = 3
+
+
 def default_store() -> dict[str, Any]:
     return {
+        "version": STORE_SCHEMA,
         "referrals": {},
         "referral_counts": {},
         "pending": {},
@@ -78,6 +82,13 @@ def load_store() -> dict[str, Any]:
     base.setdefault("card_overrides", {})
     base.setdefault("progress", {})
     base.setdefault("open_claims", {})
+    # Full player progress wipe when schema bumps (keeps card_overrides / referrals).
+    if base.get("version") != STORE_SCHEMA:
+        base["version"] = STORE_SCHEMA
+        base["progress"] = {}
+        base["pending"] = {}
+        base["open_claims"] = {}
+        save_store(base)
     return base
 
 

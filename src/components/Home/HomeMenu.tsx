@@ -23,7 +23,7 @@ const ITEMS: {
   featured?: boolean;
 }[] = [
   { id: 'daily', label: 'Ежедневный бонус', hint: 'Спин раз в сутки', featured: true },
-  { id: 'pass', label: 'Сезон', hint: 'Battle Pass · 30 уровней' },
+  { id: 'pass', label: 'Сезон', hint: 'Pass · сброс 1-го числа' },
   { id: 'shop', label: 'Магазин', hint: 'Сундуки и кейсы' },
   { id: 'library', label: 'Библиотека', hint: 'Твоя коллекция' },
   { id: 'quests', label: 'Задания', hint: 'XP сезона + награды' },

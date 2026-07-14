@@ -7,6 +7,7 @@ import { TopBar } from './components/Home/TopBar';
 import { HomeMenu } from './components/Home/HomeMenu';
 import { Header } from './components/ui/Header';
 import { checkChannelSubscription } from './utils/checkSubscription';
+import { wasProgressWipedThisSession } from './utils/storage';
 import { useTelegram } from './hooks/useTelegram';
 import { useProgress } from './hooks/useProgress';
 
@@ -188,7 +189,7 @@ function App() {
           applyCardOverrides(boot.cardOverrides);
           setContentEpoch((n) => n + 1);
         }
-        if (boot.progress) {
+        if (boot.progress && !wasProgressWipedThisSession()) {
           replaceFromServer(boot.progress);
         }
         applyServerBootstrap({

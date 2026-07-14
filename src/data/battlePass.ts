@@ -1,13 +1,13 @@
 import type { GrantReward } from '../types';
 
-export const BATTLE_PASS_SEASON_ID = 's1';
 export const BATTLE_PASS_LEVELS = 30;
 export const BATTLE_PASS_XP_PER_LEVEL = 100;
-export const BATTLE_PASS_PREMIUM_PRICE = 1500;
+/** Reachable in ~1–2 weeks of play; Pro track worth it mid-month. */
+export const BATTLE_PASS_PREMIUM_PRICE = 1000;
 
 export const BP_XP = {
-  /** Only source of Battle Pass XP — claimQuest */
-  quest: 45,
+  /** Only source of Battle Pass XP — claimQuest (~2 claims ≈ 1 level). */
+  quest: 50,
 } as const;
 
 export type PassTrack = 'free' | 'premium';
@@ -16,6 +16,8 @@ export interface BattlePassLevelDef {
   level: number;
   free: GrantReward | GrantReward[];
   premium: GrantReward | GrantReward[];
+  /** UI tip: milestone / jackpot */
+  tier?: 'normal' | 'plus' | 'great' | 'finale';
 }
 
 function coins(amount: number): GrantReward {
@@ -34,43 +36,109 @@ function card(rarity: 'common' | 'rare' | 'epic' | 'legendary'): GrantReward {
   return { kind: 'cardRarity', rarity };
 }
 
+/** UTC month key, e.g. 2026-07 — season resets on the 1st. */
+export function currentBattlePassSeasonId(date = new Date()): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+/** @deprecated use currentBattlePassSeasonId — kept for storage migration reads */
+export const BATTLE_PASS_SEASON_ID = currentBattlePassSeasonId();
+
+function levelTier(level: number): BattlePassLevelDef['tier'] {
+  if (level === BATTLE_PASS_LEVELS) return 'finale';
+  if (level % 10 === 0) return 'great';
+  if (level % 5 === 0) return 'plus';
+  return 'normal';
+}
+
+function buildLevel(level: number): BattlePassLevelDef {
+  const tier = levelTier(level);
+
+  if (tier === 'finale') {
+    return {
+      level,
+      tier,
+      free: [card('legendary'), cases(3), coins(250), ink(25), book(2)],
+      premium: [
+        card('legendary'),
+        card('epic'),
+        cases(5),
+        coins(500),
+        ink(40),
+        book(3),
+      ],
+    };
+  }
+
+  if (tier === 'great') {
+    // 10, 20
+    return {
+      level,
+      tier,
+      free: [card(level >= 20 ? 'epic' : 'rare'), cases(2), coins(120)],
+      premium: [
+        card(level >= 20 ? 'legendary' : 'epic'),
+        cases(3),
+        coins(200),
+        ink(18),
+      ],
+    };
+  }
+
+  if (tier === 'plus') {
+    // 5, 15, 25
+    return {
+      level,
+      tier,
+      free: [cases(1), coins(70), ink(10)],
+      premium: [book(1), cases(2), coins(120), ink(14)],
+    };
+  }
+
+  // Normal rung — alternating soft rewards
+  const step = ((level - 1) % 4) + 1;
+  if (step === 1) {
+    return {
+      level,
+      tier,
+      free: coins(25 + level),
+      premium: [coins(45 + level * 2), ink(4)],
+    };
+  }
+  if (step === 2) {
+    return {
+      level,
+      tier,
+      free: ink(3 + Math.floor(level / 5)),
+      premium: ink(8 + Math.floor(level / 4)),
+    };
+  }
+  if (step === 3) {
+    return {
+      level,
+      tier,
+      free: coins(30 + level),
+      premium:
+        level >= 12
+          ? [coins(50 + level * 2), book(1)]
+          : [coins(50 + level * 2)],
+    };
+  }
+  return {
+    level,
+    tier,
+    free: ink(4 + Math.floor(level / 6)),
+    premium: [coins(40 + level), ink(6 + Math.floor(level / 5))],
+  };
+}
+
 /** 30 levels × free + premium = 60 rewards. */
-export const BATTLE_PASS_LEVEL_DEFS: BattlePassLevelDef[] = [
-  { level: 1, free: coins(20), premium: coins(50) },
-  { level: 2, free: ink(3), premium: ink(8) },
-  { level: 3, free: coins(25), premium: [coins(40), ink(4)] },
-  { level: 4, free: ink(4), premium: book(1) },
-  { level: 5, free: coins(35), premium: cases(1) },
-  { level: 6, free: book(1), premium: card('rare') },
-  { level: 7, free: ink(5), premium: [coins(60), ink(6)] },
-  { level: 8, free: cases(1), premium: ink(12) },
-  { level: 9, free: coins(40), premium: card('rare') },
-  { level: 10, free: ink(6), premium: [book(1), cases(1)] },
-  { level: 11, free: coins(45), premium: card('epic') },
-  { level: 12, free: ink(7), premium: [coins(80), ink(10)] },
-  { level: 13, free: cases(1), premium: book(2) },
-  { level: 14, free: coins(50), premium: cases(2) },
-  { level: 15, free: book(1), premium: card('epic') },
-  { level: 16, free: ink(8), premium: [coins(100), ink(12)] },
-  { level: 17, free: coins(55), premium: cases(2) },
-  { level: 18, free: cases(1), premium: card('epic') },
-  { level: 19, free: ink(10), premium: book(2) },
-  { level: 20, free: coins(70), premium: [card('epic'), ink(15)] },
-  { level: 21, free: coins(80), premium: card('legendary') },
-  { level: 22, free: ink(12), premium: cases(2) },
-  { level: 23, free: book(1), premium: [coins(120), ink(18)] },
-  { level: 24, free: coins(90), premium: cases(2) },
-  { level: 25, free: ink(14), premium: card('legendary') },
-  { level: 26, free: cases(1), premium: book(2) },
-  { level: 27, free: coins(100), premium: [ink(20), cases(2)] },
-  { level: 28, free: ink(16), premium: card('legendary') },
-  { level: 29, free: coins(120), premium: [coins(150), cases(2)] },
-  {
-    level: 30,
-    free: [cases(2), coins(150)],
-    premium: [card('legendary'), cases(3), coins(200)],
-  },
-];
+export const BATTLE_PASS_LEVEL_DEFS: BattlePassLevelDef[] = Array.from(
+  { length: BATTLE_PASS_LEVELS },
+  (_, i) => buildLevel(i + 1),
+);
 
 export function battlePassLevel(xp: number): number {
   return Math.min(
@@ -84,9 +152,14 @@ export function xpIntoLevel(xp: number): number {
   return xp % BATTLE_PASS_XP_PER_LEVEL;
 }
 
-export function defaultBattlePassProgress() {
+export function xpToNextLevel(xp: number): number {
+  if (battlePassLevel(xp) >= BATTLE_PASS_LEVELS) return 0;
+  return BATTLE_PASS_XP_PER_LEVEL - xpIntoLevel(xp);
+}
+
+export function defaultBattlePassProgress(date = new Date()) {
   return {
-    seasonId: BATTLE_PASS_SEASON_ID,
+    seasonId: currentBattlePassSeasonId(date),
     xp: 0,
     premium: false,
     claimedFree: [] as number[],

@@ -9,7 +9,7 @@ import type {
   UserProgress,
 } from '../types';
 import { config, canAccessChannelFeature, getCardById } from '../content/loader';
-import { loadProgress, normalizeProgress, saveProgress } from '../utils/storage';
+import { loadProgress, normalizeProgress, saveProgress, wasProgressWipedThisSession } from '../utils/storage';
 import { canOpenDaily, willUseBonusCaseOpen } from '../utils/dailyOpen';
 import { rollDailyReward, rollPaidCaseReward } from '../utils/dailyRoll';
 import { canOpenChest } from '../utils/chestOpen';
@@ -39,9 +39,9 @@ import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
-  BATTLE_PASS_SEASON_ID,
   BP_XP,
   battlePassLevel,
+  currentBattlePassSeasonId,
   defaultBattlePassProgress,
   type PassTrack,
 } from '../data/battlePass';
@@ -74,7 +74,7 @@ function applyReward(prev: UserProgress, reward: DailyReward): UserProgress {
 }
 
 function ensureBattlePass(progress: UserProgress): UserProgress {
-  if (progress.battlePass?.seasonId === BATTLE_PASS_SEASON_ID) {
+  if (progress.battlePass?.seasonId === currentBattlePassSeasonId()) {
     return progress;
   }
   return { ...progress, battlePass: defaultBattlePassProgress() };
@@ -127,6 +127,13 @@ export function useProgress(userId: string, initData = '') {
       });
     }, 800);
   }, []);
+
+  /** After deploy wipe, push empty defaults so Bothost doesn't restore old progress. */
+  useEffect(() => {
+    if (!wasProgressWipedThisSession()) return;
+    if (!initData) return;
+    pushToServer(progressRef.current);
+  }, [userId, initData, pushToServer]);
 
   const commit = useCallback(
     (next: UserProgress) => {

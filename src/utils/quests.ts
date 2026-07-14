@@ -45,7 +45,7 @@ export const QUESTS: QuestDef[] = [
     id: 'open_paid_case',
     title: 'Рулетка',
     description: 'Открой платный кейс Soft / Mid / Hot',
-    reward: { kind: 'bonusCase', amount: 1 },
+    reward: { kind: 'coins', amount: 18 },
   },
   {
     id: 'ink_today',
