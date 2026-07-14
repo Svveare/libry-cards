@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: overlayIn 0.2s ease;
+  animation: overlayIn 0.22s var(--ease-out);
 }
 
 @keyframes overlayIn {
@@ -22,17 +22,17 @@
 .modal {
   width: 100%;
   max-width: 320px;
-  animation: modalIn 0.25s ease;
+  animation: modalIn 0.32s var(--ease-out);
 }
 
 @keyframes modalIn {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: translateY(12px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 

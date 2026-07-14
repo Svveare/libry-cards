@@ -135,6 +135,7 @@
     "startingCoins": 50
   },
   "adminUserIds": ["1920121195"],
+  "backendBaseUrl": "",
   "dev": {
     "grantAllCards": false
   }

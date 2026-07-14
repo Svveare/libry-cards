@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { Card } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import styles from './CardSlot.module.css';
@@ -22,11 +22,14 @@ export function getCardInitials(name: string): string {
 }
 
 export function CardSlot({ card, collected }: CardSlotProps) {
+  const [imgFailed, setImgFailed] = useState(false);
+
   if (!collected) {
     return <div className={styles.empty} aria-label="Пустой слот" />;
   }
 
   const color = RARITY_COLORS[card.rarity];
+  const showImage = Boolean(card.image) && !imgFailed;
 
   return (
     <article
@@ -34,13 +37,14 @@ export function CardSlot({ card, collected }: CardSlotProps) {
       style={{ '--card-rarity': color } as CSSProperties}
     >
       <div className={styles.art}>
-        {card.image ? (
+        {showImage ? (
           <img
             src={card.image}
             alt={card.name}
             className={styles.image}
             loading="lazy"
             decoding="async"
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <span className={styles.initials}>{getInitials(card.name)}</span>

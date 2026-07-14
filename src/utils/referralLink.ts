@@ -1,14 +1,12 @@
 /**
- * Build a Telegram Mini App referral deep link.
- * Named Mini App: https://t.me/{bot}/{shortName}?startapp=ref_{userId}
- * Main Mini App (empty shortName): https://t.me/{bot}?startapp=ref_{userId}
+ * Invite deep link for Bothost bot (/start ref_…).
+ * Bot registers the referral and shows the Web App button.
  */
 export function buildReferralLink(
   botUsername: string,
   userId: string,
-  shortName?: string | null,
+  _shortName?: string | null,
 ): string {
   const bot = botUsername.replace(/^@/, '').trim() || 'librycards_bot';
-  const path = shortName?.trim() ? `/${shortName.trim()}` : '';
-  return `https://t.me/${bot}${path}?startapp=ref_${userId}`;
+  return `https://t.me/${bot}?start=ref_${userId}`;
 }

@@ -321,6 +321,53 @@ export function useProgress(userId: string) {
     [commit, userId],
   );
 
+  /** Apply pending coins/cases + referralCount from Bothost bootstrap. */
+  const applyServerBootstrap = useCallback(
+    (payload: {
+      referralCount: number;
+      pendingCoins: number;
+      pendingBonusCases: number;
+      claimId: string | null;
+      inviteeReferrerId?: string | null;
+    }) => {
+      const prev = progressRef.current;
+      let next: UserProgress = {
+        ...prev,
+        referralCount: Math.max(prev.referralCount, payload.referralCount),
+      };
+      if (payload.pendingCoins > 0) {
+        next = { ...next, coins: next.coins + payload.pendingCoins };
+      }
+      if (payload.pendingBonusCases > 0) {
+        next = {
+          ...next,
+          bonusCaseOpens: next.bonusCaseOpens + payload.pendingBonusCases,
+        };
+      }
+      if (
+        payload.inviteeReferrerId &&
+        !next.referredByUserId &&
+        payload.inviteeReferrerId !== userId
+      ) {
+        next = {
+          ...next,
+          referredByUserId: payload.inviteeReferrerId,
+          referralBonusClaimed: true,
+        };
+      }
+      if (
+        next.coins !== prev.coins ||
+        next.bonusCaseOpens !== prev.bonusCaseOpens ||
+        next.referralCount !== prev.referralCount ||
+        next.referredByUserId !== prev.referredByUserId ||
+        next.referralBonusClaimed !== prev.referralBonusClaimed
+      ) {
+        commit(next);
+      }
+    },
+    [commit, userId],
+  );
+
   const buyShopItem = useCallback(
     (itemId: ShopItemId): ShopBuyResult => {
       const item = config.shop.items.find((i) => i.id === itemId);
@@ -429,5 +476,6 @@ export function useProgress(userId: string) {
     ensureInkShop,
     buyInkCard,
     applyReferralParam,
+    applyServerBootstrap,
   };
 }

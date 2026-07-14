@@ -137,6 +137,8 @@ export interface AppConfig {
     startingCoins: number;
   };
   adminUserIds?: string[];
+  /** Bothost HTTPS origin for bot API, e.g. https://xxx.bothost.ru — empty = offline */
+  backendBaseUrl?: string;
   dev?: {
     grantAllCards?: boolean;
   };

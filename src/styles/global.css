@@ -57,7 +57,7 @@ h2 {
 }
 
 .viewEnter {
-  animation: libryFadeIn 0.28s var(--ease-out);
+  animation: libryFadeIn 0.36s var(--ease-out);
 }
 
 .listStack {

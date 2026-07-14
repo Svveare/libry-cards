@@ -9,11 +9,11 @@
 }
 
 .lead {
-  margin: 0 0 18px;
-  font-size: 14px;
+  margin: 0 0 16px;
+  font-size: 13.5px;
   font-weight: 500;
-  line-height: 1.45;
-  color: var(--text-soft);
+  line-height: 1.5;
+  color: var(--text-muted);
 }
 
 .detail {

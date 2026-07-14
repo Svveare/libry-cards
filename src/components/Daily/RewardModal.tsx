@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { DailyReward } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import { getBookById, getShelfById } from '../../content/loader';
@@ -63,6 +63,72 @@ function SimpleReward({
   );
 }
 
+function CardRevealBody({
+  reward,
+  onClose,
+}: {
+  reward: Extract<DailyReward, { kind: 'card' }>;
+  onClose: () => void;
+}) {
+  const { card } = reward;
+  const color = RARITY_COLORS[card.rarity];
+  const shelf = getShelfById(card.shelfId);
+  const book = getBookById(card.bookId);
+  const displayName = card.name === '—' ? 'Пустой слот' : card.name;
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = Boolean(card.image) && !imgFailed;
+
+  return (
+    <div className={styles.overlay} onClick={onClose} role="presentation">
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reveal-title"
+      >
+        <p className={styles.kicker}>Новая карта</p>
+        <div
+          className={styles.card}
+          style={{ '--card-rarity': color } as CSSProperties}
+        >
+          <div className={styles.art}>
+            {showImage ? (
+              <img
+                src={card.image}
+                alt={displayName}
+                className={styles.image}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImgFailed(true)}
+              />
+            ) : (
+              <span className={styles.initials}>
+                {getCardInitials(displayName)}
+              </span>
+            )}
+          </div>
+          <div className={styles.info}>
+            <h2 id="reveal-title" className={styles.name}>
+              {displayName}
+            </h2>
+            <span className={styles.rarity}>{RARITY_LABELS[card.rarity]}</span>
+            <p className={styles.origin}>
+              Полка: {shelf?.name ?? '—'} · Книга: {book?.name ?? '—'}
+            </p>
+            {card.description ? (
+              <p className={styles.description}>{card.description}</p>
+            ) : null}
+          </div>
+        </div>
+        <Button fullWidth onClick={onClose}>
+          В коллекцию
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function RewardModal({ reward, onClose }: RewardModalProps) {
   if (reward.kind === 'money') {
     return (
@@ -102,58 +168,5 @@ export function RewardModal({ reward, onClose }: RewardModalProps) {
     );
   }
 
-  const { card } = reward;
-  const color = RARITY_COLORS[card.rarity];
-  const shelf = getShelfById(card.shelfId);
-  const book = getBookById(card.bookId);
-  const displayName = card.name === '—' ? 'Пустой слот' : card.name;
-
-  return (
-    <div className={styles.overlay} onClick={onClose} role="presentation">
-      <div
-        className={styles.modal}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reveal-title"
-      >
-        <p className={styles.kicker}>Новая карта</p>
-        <div
-          className={styles.card}
-          style={{ '--card-rarity': color } as CSSProperties}
-        >
-          <div className={styles.art}>
-            {card.image ? (
-              <img
-                src={card.image}
-                alt={displayName}
-                className={styles.image}
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <span className={styles.initials}>
-                {getCardInitials(displayName)}
-              </span>
-            )}
-          </div>
-          <div className={styles.info}>
-            <h2 id="reveal-title" className={styles.name}>
-              {displayName}
-            </h2>
-            <span className={styles.rarity}>{RARITY_LABELS[card.rarity]}</span>
-            <p className={styles.origin}>
-              Полка: {shelf?.name ?? '—'} · Книга: {book?.name ?? '—'}
-            </p>
-            {card.description ? (
-              <p className={styles.description}>{card.description}</p>
-            ) : null}
-          </div>
-        </div>
-        <Button fullWidth onClick={onClose}>
-          В коллекцию
-        </Button>
-      </div>
-    </div>
-  );
+  return <CardRevealBody reward={reward} onClose={onClose} />;
 }

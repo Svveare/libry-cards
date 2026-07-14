@@ -100,7 +100,7 @@ function screenNeedsContent(screen: Screen): boolean {
 }
 
 function App() {
-  const { userId, user, startParam, openTelegramLink, initData, insideTelegram } =
+  const { userId, user, startParam, initData, openTelegramLink, isReady, insideTelegram } =
     useTelegram();
   const {
     progress,
@@ -120,6 +120,7 @@ function App() {
     ensureInkShop,
     buyInkCard,
     applyReferralParam,
+    applyServerBootstrap,
   } = useProgress(userId);
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealedReward, setRevealedReward] = useState<DailyReward | null>(
@@ -157,10 +158,50 @@ function App() {
   }, [screen, contentReady]);
 
   useEffect(() => {
-    if (!startParam?.startsWith('ref_')) return;
-    const refId = startParam.slice(4);
-    if (refId) applyReferralParam(refId);
-  }, [startParam, applyReferralParam]);
+    if (!isReady) return;
+    let cancelled = false;
+    void (async () => {
+      const { fetchBootstrap, claimBootstrap, hasBackend } = await import(
+        './api/backend'
+      );
+      if (hasBackend() && initData) {
+        const boot = await fetchBootstrap(initData, startParam);
+        if (cancelled || !boot) {
+          if (!cancelled && startParam?.startsWith('ref_')) {
+            const refId = startParam.slice(4);
+            if (refId) applyReferralParam(refId);
+          }
+          return;
+        }
+        applyServerBootstrap({
+          referralCount: boot.referralCount,
+          pendingCoins: boot.pendingCoins,
+          pendingBonusCases: boot.pendingBonusCases,
+          claimId: boot.claimId,
+          inviteeReferrerId:
+            boot.referredBy ??
+            (startParam?.startsWith('ref_') ? startParam.slice(4) : null),
+        });
+        if (boot.claimId) {
+          await claimBootstrap(initData, boot.claimId);
+        }
+        return;
+      }
+      if (startParam?.startsWith('ref_')) {
+        const refId = startParam.slice(4);
+        if (refId) applyReferralParam(refId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isReady,
+    initData,
+    startParam,
+    applyReferralParam,
+    applyServerBootstrap,
+  ]);
 
   useEffect(() => {
     if (!insideTelegram || !initData || !config.telegramChannel.enabled) return;
@@ -216,6 +257,7 @@ function App() {
         if (!admin) return <ScreenFallback />;
         return (
           <AdminView
+            initData={initData}
             onBack={() => {
               setContentEpoch((n) => n + 1);
               setScreen({ name: 'profile' });

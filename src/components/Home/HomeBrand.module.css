@@ -1,13 +1,13 @@
 .brand {
   text-align: center;
-  padding: 8px 0 20px;
-  animation: brandIn 0.32s var(--ease-out);
+  padding: 14px 0 22px;
+  animation: brandIn 0.6s var(--ease-out);
 }
 
 @keyframes brandIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -18,15 +18,15 @@
 .mark {
   display: inline-flex;
   align-items: stretch;
-  height: 32px;
-  margin-bottom: 12px;
-  box-shadow: 0 8px 20px rgba(212, 168, 83, 0.22);
+  height: 36px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 28px rgba(212, 168, 83, 0.28);
   border-radius: 4px;
 }
 
 .bookLeft,
 .bookRight {
-  width: 18px;
+  width: 20px;
   border: 1.5px solid var(--gold);
   background: linear-gradient(180deg, var(--wood-light), var(--wood));
   border-radius: 3px;
@@ -50,20 +50,22 @@
 .name {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 44px;
+  font-size: clamp(40px, 11vw, 48px);
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
   color: var(--gold-bright);
   line-height: 1;
-  text-shadow: none;
+  text-shadow: 0 0 48px rgba(242, 212, 138, 0.28);
 }
 
 .tagline {
-  margin: 10px 0 0;
-  font-size: 14px;
+  margin: 12px 0 0;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-soft);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.9;
 }
 
 @media (prefers-reduced-motion: reduce) {
