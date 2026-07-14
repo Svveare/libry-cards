@@ -49,7 +49,10 @@ function patchContentWithOverrides(
             if (!o) continue;
             if (o.name !== undefined) card.name = o.name;
             if (o.description !== undefined) card.description = o.description;
-            if (o.image !== undefined) card.image = o.image;
+            if o.image !== undefined) {
+              if (o.image === '') delete card.image;
+              else card.image = o.image;
+            }
             if (o.rarity !== undefined) card.rarity = o.rarity as Rarity;
           }
         }

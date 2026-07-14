@@ -193,6 +193,7 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
       description: string;
       rarity: Rarity;
       image: string;
+      clearImage?: boolean;
     },
   ): Promise<{ ok: boolean; image?: string; error?: string }> => {
     if (!hasBackend()) {
@@ -212,13 +213,17 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
       image?: string;
       imageBase64?: string;
       mime?: string;
+      clearImage?: boolean;
     } = {
       cardId: cardIdToSave,
       name: fields.name,
       description: fields.description,
       rarity: fields.rarity,
     };
-    if (fields.image.startsWith('data:')) {
+    if (fields.clearImage) {
+      payload.clearImage = true;
+      payload.image = '';
+    } else if (fields.image.startsWith('data:')) {
       const mimeMatch = /^data:([^;]+);base64,/.exec(fields.image);
       payload.mime = mimeMatch?.[1] ?? 'image/webp';
       payload.imageBase64 = fields.image;
@@ -226,6 +231,42 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
       payload.image = fields.image;
     }
     return adminSaveCard(initData, payload);
+  };
+
+  const removeCardImage = async () => {
+    if (!card) return;
+    if (!confirm('Удалить картинку у этой карты у всех игроков?')) return;
+    const fields = {
+      name: draft.cardName.trim() || '—',
+      description: draft.cardDesc,
+      rarity: draft.cardRarity,
+      image: '',
+      clearImage: true as const,
+    };
+    const next = updateCard(data, card.id, { image: '' });
+    persist(next);
+    setDraft((d) => ({ ...d, cardImage: '' }));
+    setLastImageFileName(null);
+    setImgBroken(false);
+    setShowDeployChecklist(false);
+    setSaveBusy(true);
+    const res = await pushCardToServer(card.id, fields);
+    setSaveBusy(false);
+    if (res.ok) {
+      applyCardOverrides({
+        [card.id]: {
+          name: fields.name,
+          description: fields.description,
+          rarity: fields.rarity,
+          image: '',
+        },
+      });
+      setNote('Картинка удалена на сервере — у всех после перезахода');
+    } else {
+      setNote(
+        `Локально очищено, на сервер нет: ${res.error ?? 'ошибка'}. Открой админку из Telegram.`,
+      );
+    }
   };
 
   const onPickImage = (file: File | null) => {
@@ -848,6 +889,16 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
                       onClick={useCardsPath}
                     >
                       Поставить путь {suggestedCardsPath} для деплоя
+                    </Button>
+                  ) : null}
+                  {draft.cardImage ? (
+                    <Button
+                      fullWidth
+                      variant="ghost"
+                      disabled={saveBusy}
+                      onClick={() => void removeCardImage()}
+                    >
+                      {saveBusy ? 'Удаление…' : 'Удалить картинку'}
                     </Button>
                   ) : null}
                   <p className={styles.hint}>

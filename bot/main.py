@@ -371,6 +371,7 @@ async def api_admin_card(request: web.Request) -> web.Response:
         patch["rarity"] = str(body["rarity"])[:32]
 
     image_b64 = body.get("imageBase64")
+    clear_image = bool(body.get("clearImage"))
     if image_b64:
         mime = str(body.get("mime") or "image/webp").lower().strip()
         if mime not in MIME_EXT:
@@ -388,7 +389,6 @@ async def api_admin_card(request: web.Request) -> web.Response:
             return web.json_response({"error": "image too small"}, status=400)
 
         CARDS_DIR.mkdir(parents=True, exist_ok=True)
-        # Remove previous extensions for this card id
         for old in CARDS_DIR.glob(f"{card_id}.*"):
             try:
                 old.unlink()
@@ -401,12 +401,26 @@ async def api_admin_card(request: web.Request) -> web.Response:
         base = public_base_from(request)
         patch["image"] = f"{base}/media/cards/{filename}"
 
+    elif clear_image or body.get("image") == "":
+        # Explicit remove: empty string override hides base content image too
+        patch["image"] = ""
+        for old in CARDS_DIR.glob(f"{card_id}.*"):
+            try:
+                old.unlink()
+            except OSError:
+                pass
+
     elif body.get("image") is not None:
         img = str(body.get("image") or "").strip()
         if img:
             patch["image"] = img[:2000]
-        elif "image" in patch:
-            del patch["image"]
+        else:
+            patch["image"] = ""
+            for old in CARDS_DIR.glob(f"{card_id}.*"):
+                try:
+                    old.unlink()
+                except OSError:
+                    pass
 
     if not patch:
         return web.json_response({"error": "empty patch"}, status=400)

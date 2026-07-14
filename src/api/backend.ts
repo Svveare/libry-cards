@@ -108,6 +108,7 @@ export async function adminSaveCard(
     image?: string;
     imageBase64?: string;
     mime?: string;
+    clearImage?: boolean;
   },
 ): Promise<{ ok: boolean; image?: string; error?: string }> {
   const root = baseUrl();
