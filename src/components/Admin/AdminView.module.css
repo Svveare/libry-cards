@@ -115,6 +115,29 @@
   display: block;
 }
 
+.imageBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.imageTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.imageBlock code,
+.hint code {
+  font-size: 11px;
+  color: var(--gold);
+}
+
 .cols {
   display: flex;
   flex-direction: column;

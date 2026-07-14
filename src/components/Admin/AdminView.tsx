@@ -198,6 +198,24 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
     );
   };
 
+  const openAdminInBrowser = () => {
+    const url = window.location.href;
+    try {
+      const tg = (
+        window as unknown as {
+          Telegram?: { WebApp?: { openLink?: (u: string) => void } };
+        }
+      ).Telegram?.WebApp;
+      if (tg?.openLink) {
+        tg.openLink(url);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <section className={`viewEnter ${styles.root}`}>
       <Header title="Админка" subtitle="Контент · выдача" onBack={onBack} />
@@ -297,8 +315,8 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
             </Button>
           </div>
           <p className={styles.hint}>
-            Картинка: лучше HTTPS URL. Прод для всех = файл в public/cards/ +
-            JSON + деплой.
+            Картинки: загружай файл с устройства в браузере. Для всех игроков —
+            файл в public/cards/ + «Скачать JSON» + деплой.
           </p>
 
           <label className={styles.field}>
@@ -534,11 +552,72 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
                       }
                     />
                   </label>
+                  <div className={styles.imageBlock}>
+                    <p className={styles.imageTitle}>Картинка с устройства</p>
+                    {inTg ? (
+                      <>
+                        <p className={styles.hint}>
+                          В Telegram WebView выбор файла часто ломает экран.
+                          Нажми кнопку — админка откроется в браузере, там
+                          будет «Выбрать файл».
+                        </p>
+                        <Button
+                          fullWidth
+                          variant="secondary"
+                          onClick={openAdminInBrowser}
+                        >
+                          Открыть в браузере и загрузить файл
+                        </Button>
+                        <label className={styles.field}>
+                          <span>Всё равно выбрать файл здесь (может глючить)</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              onPickImage(e.target.files?.[0] ?? null)
+                            }
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <p className={styles.hint}>
+                          Выбери JPG/WebP с телефона или ПК. Появится превью;
+                          файл ещё скачается — его потом кладут в{' '}
+                          <code>public/cards/</code> и деплоят, чтобы видели все
+                          игроки.
+                        </p>
+                        <label className={styles.field}>
+                          <span>Выбрать файл</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              onPickImage(e.target.files?.[0] ?? null)
+                            }
+                          />
+                        </label>
+                      </>
+                    )}
+                    {draft.cardImage.startsWith('data:') ? (
+                      <p className={styles.note}>
+                        Картинка уже в оверлее (превью для тебя). Для всех
+                        игроков — положи скачанный файл в public/cards/ + JSON +
+                        деплой.
+                      </p>
+                    ) : null}
+                  </div>
+
                   <label className={styles.field}>
-                    <span>URL картинки (HTTPS предпочтительно)</span>
+                    <span>Или путь / URL (необязательно)</span>
                     <input
-                      value={draft.cardImage.startsWith('data:') ? '' : draft.cardImage}
-                      placeholder="https://… или /cards/name.webp"
+                      value={
+                        draft.cardImage.startsWith('data:')
+                          ? '(файл с устройства)'
+                          : draft.cardImage
+                      }
+                      placeholder="/cards/name.webp"
+                      disabled={draft.cardImage.startsWith('data:')}
                       onChange={(e) => {
                         setImgBroken(false);
                         setDraft((d) => ({
@@ -548,7 +627,14 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
                       }}
                     />
                   </label>
-                  {draft.cardImage && !imgBroken ? (
+                  <p className={styles.hint}>
+                    Яндекс.Диск / Google Drive обычно не работают: там ссылка на
+                    страницу, а нужна прямая картинка или файл в{' '}
+                    <code>public/cards/</code>.
+                  </p>
+                  {draft.cardImage &&
+                  !draft.cardImage.startsWith('data:') &&
+                  !imgBroken ? (
                     <div className={styles.preview}>
                       <img
                         src={draft.cardImage}
@@ -556,27 +642,13 @@ export function AdminView({ onBack, initData }: AdminViewProps) {
                         onError={() => setImgBroken(true)}
                       />
                     </div>
+                  ) : draft.cardImage.startsWith('data:') ? (
+                    <div className={styles.preview}>
+                      <img src={draft.cardImage} alt="Превью" />
+                    </div>
                   ) : draft.cardImage && imgBroken ? (
-                    <p className={styles.muted}>Превью не загрузилось — проверь URL</p>
+                    <p className={styles.muted}>Превью не загрузилось</p>
                   ) : null}
-                  {inTg ? (
-                    <p className={styles.hint}>
-                      Вставь URL картинки или открой админку в браузере (Menu →
-                      Open in browser / десктоп) — загрузка файла в Telegram
-                      WebView ломает экран.
-                    </p>
-                  ) : (
-                    <label className={styles.field}>
-                      <span>Файл → превью + скачать для public/cards</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          onPickImage(e.target.files?.[0] ?? null)
-                        }
-                      />
-                    </label>
-                  )}
                   <label className={styles.field}>
                     <span>Редкость</span>
                     <select
