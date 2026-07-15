@@ -486,10 +486,7 @@ export function useProgress(userId: string, initData = '') {
         (id) => !prev.collectedCardIds.includes(id),
       );
     }
-    const offers = rollInkShopOffers(
-      prev.collectedCardIds,
-      prev.secretPageUnlockedBookIds,
-    );
+    const offers = rollInkShopOffers(prev.collectedCardIds);
     const ids = offers.map((c) => c.id);
     commit({
       ...prev,
@@ -511,6 +508,7 @@ export function useProgress(userId: string, initData = '') {
       if (prev.collectedCardIds.includes(cardId)) return { status: 'gone' };
       const card = getCardById(cardId);
       if (!card) return { status: 'gone' };
+      if (card.rarity === 'secret') return { status: 'gone' };
       const price = inkShopPrice(card.rarity);
       if (prev.ink < price) return { status: 'broke' };
       const reward: DailyReward = { kind: 'card', card };

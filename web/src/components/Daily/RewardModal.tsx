@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { DailyReward } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import { getBookById, getShelfById } from '../../content/loader';
@@ -9,6 +9,27 @@ import styles from './RewardModal.module.css';
 interface RewardModalProps {
   reward: DailyReward;
   onClose: () => void;
+}
+
+/** Fixed ink/silver mote positions for the secret veil stage. */
+const SECRET_MOTES = [
+  { left: '12%', top: '18%', delay: '0.05s', duration: '1.8s' },
+  { left: '78%', top: '14%', delay: '0.2s', duration: '2.1s' },
+  { left: '22%', top: '62%', delay: '0.12s', duration: '1.9s' },
+  { left: '68%', top: '72%', delay: '0.35s', duration: '2.0s' },
+  { left: '48%', top: '22%', delay: '0.08s', duration: '1.7s' },
+  { left: '88%', top: '48%', delay: '0.28s', duration: '2.2s' },
+  { left: '8%', top: '42%', delay: '0.4s', duration: '1.85s' },
+  { left: '55%', top: '58%', delay: '0.15s', duration: '2.05s' },
+  { left: '35%', top: '78%', delay: '0.45s', duration: '1.95s' },
+  { left: '72%', top: '38%', delay: '0.22s', duration: '1.75s' },
+] as const;
+
+const SECRET_BUTTON_MS = 2000;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function ModalShell({
@@ -77,14 +98,56 @@ function CardRevealBody({
   const book = getBookById(card.bookId);
   const displayName = card.name === '—' ? 'Пустой слот' : card.name;
   const [imgFailed, setImgFailed] = useState(false);
+  const [secretReady, setSecretReady] = useState(!isSecret);
   const showImage = Boolean(card.image) && !imgFailed;
+
+  useEffect(() => {
+    if (!isSecret) {
+      setSecretReady(true);
+      return;
+    }
+    if (prefersReducedMotion()) {
+      setSecretReady(true);
+      return;
+    }
+    setSecretReady(false);
+    const id = window.setTimeout(() => setSecretReady(true), SECRET_BUTTON_MS);
+    return () => window.clearTimeout(id);
+  }, [isSecret]);
 
   return (
     <div
       className={`${styles.overlay} ${isSecret ? styles.overlaySecret : ''}`}
-      onClick={onClose}
+      onClick={secretReady ? onClose : undefined}
       role="presentation"
     >
+      {isSecret ? (
+        <div className={styles.secretStage} aria-hidden="true">
+          <div className={styles.secretVeil} />
+          <div className={styles.secretSigil} />
+          <div className={styles.secretRings}>
+            <span className={styles.secretRing} />
+            <span className={`${styles.secretRing} ${styles.secretRingMid}`} />
+            <span className={`${styles.secretRing} ${styles.secretRingOuter}`} />
+          </div>
+          <div className={styles.secretVignette} />
+          <div className={styles.secretBurst} />
+          {SECRET_MOTES.map((mote, i) => (
+            <span
+              key={i}
+              className={styles.secretMote}
+              style={
+                {
+                  '--mote-left': mote.left,
+                  '--mote-top': mote.top,
+                  '--mote-delay': mote.delay,
+                  '--mote-duration': mote.duration,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+      ) : null}
       <div
         className={`${styles.modal} ${isSecret ? styles.modalSecret : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -99,7 +162,9 @@ function CardRevealBody({
           className={`${styles.card} ${isSecret ? styles.cardSecret : ''}`}
           style={{ '--card-rarity': color } as CSSProperties}
         >
-          {isSecret ? <span className={styles.secretStamp}>Секрет</span> : null}
+          {isSecret ? (
+            <span className={styles.secretStamp}>Секрет</span>
+          ) : null}
           <div className={styles.art}>
             {showImage ? (
               <img
@@ -136,9 +201,23 @@ function CardRevealBody({
             )}
           </div>
         </div>
-        <Button fullWidth onClick={onClose}>
-          В коллекцию
-        </Button>
+        {isSecret ? (
+          <div
+            className={`${styles.secretCta} ${secretReady ? styles.secretCtaReady : ''}`}
+          >
+            {secretReady ? (
+              <Button fullWidth onClick={onClose}>
+                В коллекцию
+              </Button>
+            ) : (
+              <div className={styles.secretCtaSpacer} aria-hidden="true" />
+            )}
+          </div>
+        ) : (
+          <Button fullWidth onClick={onClose}>
+            В коллекцию
+          </Button>
+        )}
       </div>
     </div>
   );

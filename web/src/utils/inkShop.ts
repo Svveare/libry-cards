@@ -1,8 +1,5 @@
 import type { Card, Rarity } from '../types';
-import {
-  getPermanentCards,
-  getUnlockedSecretCards,
-} from '../content/loader';
+import { getPermanentCards } from '../content/loader';
 import { INK_SHOP_REFRESH_MS } from './ink';
 
 const TARGET: { rarity: Rarity | 'legend_plus'; count: number }[] = [
@@ -31,16 +28,13 @@ function pickFrom(
   return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
 }
 
-/** Up to 6 uncollected cards: 2 common / 2 rare / 1 epic / 1 legendary+; optional secret. */
-export function rollInkShopOffers(
-  collectedIds: string[],
-  unlockedSecretBookIds: string[] = [],
-): Card[] {
+/** Up to 6 uncollected cards: 2 common / 2 rare / 1 epic / 1 legendary+; secrets excluded. */
+export function rollInkShopOffers(collectedIds: string[]): Card[] {
   const collected = new Set(collectedIds);
   const pool = getPermanentCards().filter(
     (c) => c.rarity !== 'secret' && !collected.has(c.id),
   );
-  if (pool.length === 0 && unlockedSecretBookIds.length === 0) return [];
+  if (pool.length === 0) return [];
 
   const used = new Set<string>();
   const offers: Card[] = [];
@@ -66,22 +60,6 @@ export function rollInkShopOffers(
       if (card) {
         used.add(card.id);
         offers.push(card);
-      }
-    }
-  }
-
-  const secretPool = getUnlockedSecretCards(
-    unlockedSecretBookIds,
-    collected,
-  ).filter((c) => !used.has(c.id));
-  if (secretPool.length > 0) {
-    const secret =
-      secretPool[Math.floor(Math.random() * secretPool.length)] ?? null;
-    if (secret) {
-      if (offers.length >= 6) {
-        offers[offers.length - 1] = secret;
-      } else {
-        offers.push(secret);
       }
     }
   }

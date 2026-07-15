@@ -365,7 +365,6 @@ function App() {
             <ChestView
               lastChestOpenAt={progress.lastChestOpenAt}
               collectedIds={progress.collectedCardIds}
-              unlockedSecretBookIds={progress.secretPageUnlockedBookIds}
               variant={variant}
               channelConfirmed={Boolean(progress.channelConfirmedAt)}
               onStart={startChest}
