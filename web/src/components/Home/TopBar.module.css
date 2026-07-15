@@ -8,6 +8,11 @@
   z-index: 2;
 }
 
+.barFs {
+  gap: 10px;
+  padding: 4px 0 14px;
+}
+
 .profile {
   display: flex;
   align-items: center;
@@ -20,6 +25,10 @@
   color: var(--text);
   box-shadow: var(--shadow-shelf);
   transition: border-color 0.15s ease;
+}
+
+.barFs .profile {
+  padding: 5px;
 }
 
 .profile:active {
@@ -65,16 +74,16 @@
 
 .fsBtn {
   flex-shrink: 0;
-  padding: 8px 10px;
-  border-radius: var(--radius-pill);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
   background: var(--surface-raised);
   border: 1px solid var(--border-strong);
   color: var(--gold-bright);
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 1;
 }
 
 .fsBtn:active {
@@ -90,6 +99,10 @@
   background: var(--surface);
   border: 1px solid var(--border);
   min-width: 0;
+}
+
+.barFs .stat {
+  padding: 6px 9px;
 }
 
 .bookmark {

@@ -39,7 +39,8 @@ type TelegramWebApp = {
 };
 
 const PREFER_FS_KEY = 'libry_prefer_fullscreen';
-const FS_PAD_BUFFER = 8;
+const FS_PAD_BUFFER = 16;
+const FS_MIN_TOP = 72;
 const BASE_PAD_TOP = 12;
 const BASE_PAD_SIDE = 18;
 const BASE_PAD_BOTTOM = 40;
@@ -79,26 +80,18 @@ function syncSafeAreas(app: TelegramWebApp) {
   document.documentElement.dataset.tgFullscreen = fullscreen ? '1' : '0';
 
   if (fullscreen) {
-    // In FS content draws under TG chrome — pad clear of close / status bar.
+    // Sum safe (status) + content (TG Close/menus) — not max.
+    const chromeTop = insetPx(safe?.top) + insetPx(content?.top);
+    const chromeBottom = insetPx(safe?.bottom) + insetPx(content?.bottom);
+    const chromeLeft = insetPx(safe?.left) + insetPx(content?.left);
+    const chromeRight = insetPx(safe?.right) + insetPx(content?.right);
     setCssPx(
       '--app-pad-top',
-      Math.max(insetPx(content?.top), insetPx(safe?.top)) +
-        BASE_PAD_TOP +
-        FS_PAD_BUFFER,
+      Math.max(FS_MIN_TOP, chromeTop) + BASE_PAD_TOP + FS_PAD_BUFFER,
     );
-    setCssPx(
-      '--app-pad-bottom',
-      Math.max(insetPx(content?.bottom), insetPx(safe?.bottom)) +
-        BASE_PAD_BOTTOM,
-    );
-    setCssPx(
-      '--app-pad-left',
-      Math.max(insetPx(content?.left), insetPx(safe?.left)) + BASE_PAD_SIDE,
-    );
-    setCssPx(
-      '--app-pad-right',
-      Math.max(insetPx(content?.right), insetPx(safe?.right)) + BASE_PAD_SIDE,
-    );
+    setCssPx('--app-pad-bottom', chromeBottom + BASE_PAD_BOTTOM);
+    setCssPx('--app-pad-left', chromeLeft + BASE_PAD_SIDE + 8);
+    setCssPx('--app-pad-right', chromeRight + BASE_PAD_SIDE + 8);
   } else {
     // Expand mode: TG already sits above the WebView — no contentSafeArea top.
     setCssPx('--app-pad-top', BASE_PAD_TOP);

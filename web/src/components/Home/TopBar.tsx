@@ -25,12 +25,17 @@ export const TopBar = memo(function TopBar({
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <header className={styles.bar}>
-      <button type="button" className={styles.profile} onClick={onProfileClick}>
+    <header className={`${styles.bar} ${isFullscreen ? styles.barFs : ''}`}>
+      <button
+        type="button"
+        className={styles.profile}
+        onClick={onProfileClick}
+        aria-label={name}
+      >
         <span className={styles.avatar} aria-hidden>
           {initial}
         </span>
-        <span className={styles.name}>{name}</span>
+        {!isFullscreen ? <span className={styles.name}>{name}</span> : null}
       </button>
       <div className={styles.actions}>
         {showFullscreenToggle && onToggleFullscreen ? (
@@ -40,8 +45,9 @@ export const TopBar = memo(function TopBar({
             onClick={onToggleFullscreen}
             aria-pressed={isFullscreen}
             title={isFullscreen ? 'Обычный режим' : 'На весь экран'}
+            aria-label={isFullscreen ? 'Свернуть экран' : 'На весь экран'}
           >
-            {isFullscreen ? 'Свернуть' : 'Экран'}
+            {isFullscreen ? '↓' : '⛶'}
           </button>
         ) : null}
         <div className={styles.stats}>
@@ -50,7 +56,9 @@ export const TopBar = memo(function TopBar({
               ◈
             </span>
             <div className={styles.statText}>
-              <span className={styles.statLabel}>Монеты</span>
+              {!isFullscreen ? (
+                <span className={styles.statLabel}>Монеты</span>
+              ) : null}
               <span className={styles.statValue}>{coins}</span>
             </div>
           </div>
@@ -59,7 +67,9 @@ export const TopBar = memo(function TopBar({
               ⌘
             </span>
             <div className={styles.statText}>
-              <span className={styles.statLabel}>Собрано</span>
+              {!isFullscreen ? (
+                <span className={styles.statLabel}>Собрано</span>
+              ) : null}
               <span className={styles.statValue}>{rating}</span>
             </div>
           </div>

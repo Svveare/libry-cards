@@ -16,7 +16,7 @@ import {
   updateCard,
   updateShelf,
 } from '../../utils/adminContent';
-import { adminGrant, adminSaveCard, hasBackend } from '../../api/backend';
+import { adminGrant, adminSaveCard, adminBroadcast, hasBackend } from '../../api/backend';
 import { applyCardOverrides } from '../../content/loader';
 import { Header } from '../ui/Header';
 import { Button } from '../ui/Button';
@@ -39,7 +39,7 @@ const RARITIES: Rarity[] = [
 
 const MAX_DATA_URL_BYTES = 300_000;
 
-type Tab = 'content' | 'grant';
+type Tab = 'content' | 'grant' | 'broadcast';
 
 type Draft = {
   shelfName: string;
@@ -90,6 +90,8 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
   const [grantCoins, setGrantCoins] = useState('25');
   const [grantCases, setGrantCases] = useState('0');
   const [grantBusy, setGrantBusy] = useState(false);
+  const [broadcastText, setBroadcastText] = useState('');
+  const [broadcastBusy, setBroadcastBusy] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
 
   const inTg = insideTelegramWebApp();
@@ -448,6 +450,33 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
     );
   };
 
+  const onBroadcast = async () => {
+    const text = broadcastText.trim();
+    if (!text) {
+      setNote('Напиши текст рассылки');
+      return;
+    }
+    if (!hasBackend()) {
+      setNote('Нужен backendBaseUrl в config (Bothost HTTPS)');
+      return;
+    }
+    if (!initData) {
+      setNote('Открой админку из Telegram Mini App');
+      return;
+    }
+    if (!confirm(`Отправить сообщение ${text.length} символов всем известным игрокам?`)) {
+      return;
+    }
+    setBroadcastBusy(true);
+    const res = await adminBroadcast(initData, text);
+    setBroadcastBusy(false);
+    setNote(
+      res.ok
+        ? `Рассылка: отправлено ${res.sent ?? 0} / ${res.total ?? 0}, ошибок ${res.failed ?? 0}`
+        : `Ошибка: ${res.error ?? 'неизвестно'}`,
+    );
+  };
+
   const openAdminInBrowser = () => {
     const url = window.location.href;
     try {
@@ -468,7 +497,7 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
 
   return (
     <section className={`viewEnter ${styles.root}`}>
-      <Header title="Админка" subtitle="Контент · выдача" onBack={onBack} />
+      <Header title="Админка" subtitle="Контент · выдача · рассылка" onBack={onBack} />
 
       {isGuest ? (
         <div className={styles.warnBanner} role="status">
@@ -509,11 +538,49 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
         >
           Выдача
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'broadcast'}
+          className={`${styles.tab} ${tab === 'broadcast' ? styles.tabActive : ''}`}
+          onClick={() => setTab('broadcast')}
+        >
+          Рассылка
+        </button>
       </div>
 
       {note ? <p className={styles.note}>{note}</p> : null}
 
-      {tab === 'grant' ? (
+      {tab === 'broadcast' ? (
+        <div className={styles.grantPanel}>
+          <p className={styles.hint}>
+            Сообщение уйдёт от бота всем известным игрокам (заходившие в Mini
+            App или /start) с кнопкой «Начать играть».
+          </p>
+          <label className={styles.field}>
+            <span>Текст</span>
+            <textarea
+              rows={6}
+              value={broadcastText}
+              placeholder="Привет! Загляни в библиотеку — новый сезон."
+              onChange={(e) => setBroadcastText(e.target.value)}
+              maxLength={3500}
+            />
+          </label>
+          <Button
+            fullWidth
+            disabled={broadcastBusy}
+            onClick={() => void onBroadcast()}
+          >
+            {broadcastBusy ? 'Отправка…' : 'Отправить'}
+          </Button>
+          {!hasBackend() ? (
+            <p className={styles.muted}>
+              backendBaseUrl пуст — задеплой bot на Bothost
+            </p>
+          ) : null}
+        </div>
+      ) : tab === 'grant' ? (
         <div className={styles.grantPanel}>
           <p className={styles.hint}>
             Монеты и бонус-открытия придут игроку при следующем входе в Mini

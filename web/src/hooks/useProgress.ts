@@ -57,14 +57,13 @@ import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
-  BP_MAX_XP,
-  BP_OVERFLOW_XP,
   PASS_BONUS_PAGE_PREMIUM_LEVELS,
   battlePassLevel,
   currentBattlePassSeasonId,
   defaultBattlePassProgress,
   type PassTrack,
 } from '../data/battlePass';
+import { addBattlePassXp } from '../utils/passXp';
 
 export type DailyPreviewResult =
   | { status: 'ok'; reward: DailyReward }
@@ -105,38 +104,6 @@ function ensureBattlePass(progress: UserProgress): UserProgress {
     return progress;
   }
   return { ...progress, battlePass: defaultBattlePassProgress() };
-}
-
-function addXp(progress: UserProgress, amount: number): UserProgress {
-  let next = ensureBattlePass(withCurrentDayStats(progress));
-  const xp = next.battlePass.xp + amount;
-  next = {
-    ...next,
-    battlePass: { ...next.battlePass, xp },
-  };
-
-  while (
-    Math.max(
-      0,
-      Math.floor((next.battlePass.xp - BP_MAX_XP) / BP_OVERFLOW_XP),
-    ) > next.battlePass.overflowClaims
-  ) {
-    const before = next;
-    const overflowReward = next.battlePass.premium
-      ? ({ kind: 'bonusCase', amount: 1 } as const)
-      : ({ kind: 'ink', amount: 8 } as const);
-    next = applyGrant(next, overflowReward);
-    next = trackInkFromReward(before, next);
-    next = {
-      ...next,
-      battlePass: {
-        ...next.battlePass,
-        overflowClaims: next.battlePass.overflowClaims + 1,
-      },
-    };
-  }
-
-  return next;
 }
 
 function trackInkFromReward(
@@ -423,7 +390,7 @@ export function useProgress(userId: string, initData = '') {
       ...next,
       claimedQuestIds: [...next.claimedQuestIds, key],
     };
-    next = addXp(next, def.xp);
+    next = addBattlePassXp(next, def.xp);
     commit(next);
     return true;
   }, [commit, isQuestComplete]);

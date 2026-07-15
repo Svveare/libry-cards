@@ -143,6 +143,40 @@ export async function adminGrant(
   }
 }
 
+export async function adminBroadcast(
+  initData: string,
+  text: string,
+): Promise<{
+  ok: boolean;
+  sent?: number;
+  failed?: number;
+  total?: number;
+  error?: string;
+}> {
+  const root = baseUrl();
+  if (!root) return { ok: false, error: 'backend не настроен' };
+  try {
+    const data = await postJson<{
+      ok?: boolean;
+      sent?: number;
+      failed?: number;
+      total?: number;
+    }>('/api/admin/broadcast', { initData, text });
+    return {
+      ok: true,
+      sent: data.sent ?? 0,
+      failed: data.failed ?? 0,
+      total: data.total ?? 0,
+    };
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.code === 'unauthorized') return { ok: false, error: 'unauthorized' };
+      return { ok: false, error: e.message };
+    }
+    return { ok: false, error: 'сеть' };
+  }
+}
+
 export async function adminSaveCard(
   initData: string,
   payload: {

@@ -4,6 +4,7 @@ import {
   isAfterMiddayUnlock,
   touchFirstActive,
 } from './dayStats';
+import { addBattlePassXp, xpForNewCard } from './passXp';
 
 /** Track quest-related outcomes after a reward is applied. */
 export function trackRewardOutcome(
@@ -48,6 +49,7 @@ export function trackRewardOutcome(
   const wasNew = !before.collectedCardIds.includes(reward.card.id);
   if (wasNew) {
     next = bumpDayStats(next, { newCards: 1 });
+    next = addBattlePassXp(next, xpForNewCard(reward.card.rarity));
   }
 
   const r = reward.card.rarity;
