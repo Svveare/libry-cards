@@ -34,6 +34,7 @@ interface ChestViewProps {
 type Phase = 'idle' | 'picking' | 'done';
 
 const REVEAL_MS = 520;
+const SECRET_REVEAL_MS = 980;
 
 function TreasureChest({
   open,
@@ -136,11 +137,15 @@ export function ChestView({
     onCommitOpen(variant);
 
     const reward = resolveChestPick(slot);
+    const holdMs =
+      slot.type === 'card' && slot.card.rarity === 'secret'
+        ? SECRET_REVEAL_MS
+        : REVEAL_MS;
     revealTimer.current = window.setTimeout(() => {
       revealTimer.current = null;
       onCommit(reward);
       onRewardRevealed(reward);
-    }, REVEAL_MS);
+    }, holdMs);
   };
 
   const blurb =
@@ -282,12 +287,13 @@ export function ChestView({
               const name = card.name === '—' ? 'Пустой слот' : card.name;
               const initials = getCardInitials(name);
               const rarityLabel = RARITY_LABELS[card.rarity];
+              const isSecret = card.rarity === 'secret';
 
               return (
                 <button
                   key={`${card.id}-${index}`}
                   type="button"
-                  className={`${styles.slot} ${isPicked ? styles.picked : ''} ${revealAll && !isPicked ? styles.alt : ''}`}
+                  className={`${styles.slot} ${isPicked ? styles.picked : ''} ${isPicked && isSecret ? styles.pickedSecret : ''} ${revealAll && !isPicked ? styles.alt : ''}`}
                   disabled={phase !== 'picking' || pickedIndex !== null}
                   onClick={() => handlePick(index)}
                   aria-label={flipped ? name : `Слот ${index + 1}`}
@@ -300,9 +306,12 @@ export function ChestView({
                       <span className={styles.backHint}>LC</span>
                     </div>
                     <div
-                      className={`${styles.face} ${styles.front}`}
+                      className={`${styles.face} ${styles.front} ${flipped && isSecret ? styles.frontSecret : ''}`}
                       style={{ '--card-rarity': color } as CSSProperties}
                     >
+                      {flipped && isSecret && isPicked ? (
+                        <span className={styles.secretStamp}>Секрет</span>
+                      ) : null}
                       <span className={styles.initials}>{initials}</span>
                       <span className={styles.name}>{name}</span>
                       <span className={styles.rarity}>

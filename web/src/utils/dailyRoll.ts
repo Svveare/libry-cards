@@ -10,6 +10,7 @@ import {
   getPermanentCards,
   getUnlockedSecretCards,
 } from '../content/loader';
+import { inkForDupe } from './ink';
 import { pickWeighted } from './weighted';
 
 /** Weights sum to 100. No mythic; ink is not a daily slot kind. */
@@ -54,8 +55,8 @@ const CASE_WEIGHTS: Record<
   ],
 };
 
-/** Hot case only: chance to roll an unlocked secret card before normal weights. */
-const HOT_SECRET_CHANCE = 0.01;
+/** Hot case only: chance to roll an unlocked secret card before normal weights (~3.5%). */
+const HOT_SECRET_CHANCE = 0.035;
 
 const RARITY_FALLBACK: Rarity[] = ['legendary', 'epic', 'rare', 'common'];
 
@@ -142,7 +143,7 @@ export function rollDailyReward(collectedIds: string[]): DailyReward {
   return { kind: 'ink', amount: 2 };
 }
 
-/** Paid case tiers: no coins; empty pool → pages. Hot can rarely drop secret. */
+/** Paid case tiers: no coins; empty pool → dupe ink. Hot can rarely drop secret. */
 export function rollPaidCaseReward(
   collectedIds: string[],
   tier: CaseTier = 'mid',
@@ -164,7 +165,7 @@ export function rollPaidCaseReward(
   const card = pickCardWithFallback(kind as Rarity, collected, pool);
   if (card) return { kind: 'card', card };
 
-  return { kind: 'pages', amount: 1 };
+  return { kind: 'ink', amount: inkForDupe(kind as Rarity) };
 }
 
 /** Strip cell used for case animation (visual only). */

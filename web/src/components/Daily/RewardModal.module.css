@@ -135,6 +135,167 @@
   }
 }
 
+.overlaySecret {
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 42%,
+      color-mix(in srgb, var(--rarity-secret) 16%, transparent),
+      transparent 68%
+    ),
+    rgba(6, 4, 3, 0.92);
+  animation: overlaySecretIn 0.7s var(--ease-out);
+}
+
+@keyframes overlaySecretIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalSecret {
+  animation: modalSecretIn 0.85s var(--ease-out);
+}
+
+@keyframes modalSecretIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.kickerSecret {
+  color: var(--rarity-secret);
+  text-shadow:
+    0 0 18px color-mix(in srgb, var(--rarity-secret) 45%, transparent),
+    0 0 28px color-mix(in srgb, var(--rarity-secret) 22%, transparent);
+  animation: kickerSecretIn 0.55s var(--ease-out) both;
+}
+
+@keyframes kickerSecretIn {
+  from {
+    opacity: 0;
+    letter-spacing: 0.28em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.18em;
+  }
+}
+
+.cardSecret {
+  border-color: color-mix(in srgb, var(--rarity-secret) 80%, #ffffff);
+  background: #08090b;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
+    0 0 28px color-mix(in srgb, var(--rarity-secret) 35%, transparent),
+    0 0 48px color-mix(in srgb, var(--rarity-secret) 18%, transparent);
+  animation: secretCardReveal 1.05s var(--ease-out) both;
+}
+
+.cardSecret::before {
+  border-color: color-mix(in srgb, var(--rarity-secret) 70%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--rarity-secret) 25%, transparent);
+  animation: secretRingPulse 2.4s ease-in-out infinite;
+}
+
+.cardSecret::after {
+  background: linear-gradient(
+    115deg,
+    transparent 28%,
+    color-mix(in srgb, var(--rarity-secret) 42%, rgba(255, 255, 255, 0.12)) 48%,
+    transparent 64%
+  );
+  opacity: 0.9;
+  animation: secretSheenSweep 2.4s ease-in-out 0.2s 1 forwards;
+}
+
+.secretStamp {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #1a1c20;
+  background: color-mix(in srgb, var(--rarity-secret) 88%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--rarity-secret) 70%, #8a93a3);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--rarity-secret) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  animation: secretStampIn 0.7s var(--ease-out) 0.35s both;
+}
+
+@keyframes secretCardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+    filter: brightness(1.35);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1.03);
+    filter: brightness(1.2);
+  }
+  70% {
+    transform: scale(1);
+    filter: brightness(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes secretRingPulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--rarity-secret) 22%, transparent);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 26px color-mix(in srgb, var(--rarity-secret) 45%, transparent);
+  }
+}
+
+@keyframes secretSheenSweep {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0.35;
+  }
+  40% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0.55;
+  }
+}
+
+@keyframes secretStampIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85) rotate(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+  }
+}
+
 .card::before {
   content: '';
   position: absolute;
@@ -255,9 +416,16 @@
 @media (prefers-reduced-motion: reduce) {
   .simple,
   .card,
+  .cardSecret,
   .kicker,
+  .kickerSecret,
   .big,
-  .card::after {
+  .overlaySecret,
+  .modalSecret,
+  .secretStamp,
+  .card::after,
+  .cardSecret::before,
+  .cardSecret::after {
     animation: none;
   }
 }

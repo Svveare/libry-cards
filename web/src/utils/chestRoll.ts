@@ -18,8 +18,8 @@ const FREE_WEIGHTS: { kind: Rarity; weight: number }[] = [
 const FREE_MONEY_SLOT_CHANCE = 0.08;
 const FREE_PAGES_SLOT_CHANCE = 0.015;
 const PLUS_PAGES_SLOT_CHANCE = 0.025;
-/** Chest+ only: chance a slot rolls an unlocked secret card. */
-const PLUS_SECRET_SLOT_CHANCE = 0.02;
+/** Chest+ only: chance a slot rolls an unlocked secret card (~6%, under mythic ~8%). */
+const PLUS_SECRET_SLOT_CHANCE = 0.06;
 
 /** Chest+: no money, stronger. */
 const PLUS_WEIGHTS: { kind: Rarity; weight: number }[] = [

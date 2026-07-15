@@ -71,6 +71,7 @@ function CardRevealBody({
   onClose: () => void;
 }) {
   const { card } = reward;
+  const isSecret = card.rarity === 'secret';
   const color = RARITY_COLORS[card.rarity];
   const shelf = getShelfById(card.shelfId);
   const book = getBookById(card.bookId);
@@ -79,19 +80,26 @@ function CardRevealBody({
   const showImage = Boolean(card.image) && !imgFailed;
 
   return (
-    <div className={styles.overlay} onClick={onClose} role="presentation">
+    <div
+      className={`${styles.overlay} ${isSecret ? styles.overlaySecret : ''}`}
+      onClick={onClose}
+      role="presentation"
+    >
       <div
-        className={styles.modal}
+        className={`${styles.modal} ${isSecret ? styles.modalSecret : ''}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reveal-title"
       >
-        <p className={styles.kicker}>Новая карта</p>
+        <p className={`${styles.kicker} ${isSecret ? styles.kickerSecret : ''}`}>
+          {isSecret ? 'Секретная карта' : 'Новая карта'}
+        </p>
         <div
-          className={styles.card}
+          className={`${styles.card} ${isSecret ? styles.cardSecret : ''}`}
           style={{ '--card-rarity': color } as CSSProperties}
         >
+          {isSecret ? <span className={styles.secretStamp}>Секрет</span> : null}
           <div className={styles.art}>
             {showImage ? (
               <img

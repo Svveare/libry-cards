@@ -220,6 +220,98 @@
   box-shadow: 0 0 0 2px var(--gold-bright), 0 12px 28px rgba(0, 0, 0, 0.4);
 }
 
+.pickedSecret {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--rarity-secret) 85%, #ffffff),
+    0 0 22px color-mix(in srgb, var(--rarity-secret) 45%, transparent),
+    0 12px 28px rgba(0, 0, 0, 0.4);
+  animation: secretPickPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes secretPickPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--rarity-secret) 75%, #ffffff),
+      0 0 16px color-mix(in srgb, var(--rarity-secret) 35%, transparent),
+      0 12px 28px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--rarity-secret) 95%, #ffffff),
+      0 0 28px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
+      0 12px 28px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.frontSecret {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 50% 20%,
+      color-mix(in srgb, var(--rarity-secret) 22%, transparent),
+      transparent 70%
+    ),
+    var(--surface-raised);
+  border-color: color-mix(in srgb, var(--rarity-secret) 80%, #ffffff);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--rarity-secret) 12%, transparent);
+}
+
+.frontSecret::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in srgb, var(--rarity-secret) 40%, rgba(255, 255, 255, 0.1)) 48%,
+    transparent 62%
+  );
+  animation: secretSlotSheen 1.8s ease-in-out 1 forwards;
+}
+
+@keyframes secretSlotSheen {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0.7;
+  }
+}
+
+.secretStamp {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  z-index: 2;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1a1c20;
+  background: color-mix(in srgb, var(--rarity-secret) 88%, #ffffff);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--rarity-secret) 35%, transparent);
+  animation: secretStampPop 0.45s var(--ease-out, ease) 0.15s both;
+}
+
+@keyframes secretStampPop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .alt {
   opacity: 0.72;
   transform: scale(0.96);
@@ -330,7 +422,11 @@
   .chestLid,
   .face,
   .slot,
-  .picked {
+  .picked,
+  .pickedSecret,
+  .frontSecret::after,
+  .secretStamp {
     transition: none;
+    animation: none;
   }
 }
