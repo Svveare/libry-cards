@@ -28,10 +28,15 @@ Vercel: root репозитория, `vercel.json` сам ставит `npm … 
 
 ## Бот (Bothost)
 
-1. Git URL этого репо (корень = Python: `requirements.txt` + `main.py`)
-2. Главный файл: **`main.py`** (не Node / не `bot/main.py` через node)
-3. Env: `BOT_TOKEN`, `WEBAPP_URL`, `PUBLIC_BASE=https://bot-….bothost.tech`, `ADMIN_IDS`
-4. Redeploy после пуша → в **логах сборки** должно быть `pip install`, **не** `npm install`
-5. `GET …/api/health`
+Bothost у твоего бота **закешировал Node** (`CMD node bot/main.py`). Это настройка панели, не код — обычный `master` он продолжает собирать как Node.
 
-Подробнее: [`bot/README.md`](bot/README.md).
+**Рабочий выход:**
+
+1. В Bothost укажи ветку **`bothost`** (отдельная ветка только с Python: `main.py` + `requirements.txt`, без `package.json`).
+2. Главный файл: **`main.py`**
+3. Язык / тип: **Python** (если нельзя сменить — **удали бота и создай нового** как Python с тем же Git, branch=`bothost`).
+4. Env: `BOT_TOKEN`, `WEBAPP_URL`, `PUBLIC_BASE`, `ADMIN_IDS`
+5. Redeploy. В логах сборки должно быть **`pip install` / `python`**, не `npm` и не `CMD ["node",…]`.
+6. Если URL Bothost снова сменится — обнови `web/src/data/config.json` → `backendBaseUrl`.
+
+Мини-апп и код бота для разработки — ветка **`master`** (фронт в `web/`, бот в `bot/`).
