@@ -41,14 +41,14 @@ curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
 ## Деплой бота (Bothost)
 
 Репозиторий: https://github.com/Svveare/libry-cards.git  
-Код бота в папке **`bot/`**.
+Код бота в папке **`bot/`**. В корне репо есть **`Dockerfile`** — Bothost иначе видит `package.json` и запускает Node (`node bot/main.py` → ошибка).
 
 См. [`bot/README.md`](bot/README.md). Кратко:
 
-1. В Bothost укажи Git URL репозитория, root/subdir = `bot` (если есть такое поле)
-2. Env: `BOT_TOKEN`, `WEBAPP_URL` (Vercel), `ADMIN_IDS=1920121195`
-3. Старт: `pip install -r requirements.txt && python main.py`
-4. Проверка: `GET https://<bothost-host>/api/health`
+1. Git URL репозитория; если есть опция «кастомный Dockerfile» — включи
+2. Env: `BOT_TOKEN`, `WEBAPP_URL` (Vercel), `ADMIN_IDS=1920121195`,  
+   `PUBLIC_BASE=https://bot-1784045992-8108-svveare.bothost.tech`
+3. После деплоя: `GET https://…bothost.tech/api/health`
 
 Приглашение: `https://t.me/librycards_bot?start=ref_{telegramId}`  
 Бот отвечает кнопкой Web App → Mini App забирает бонус через `POST /api/bootstrap`.

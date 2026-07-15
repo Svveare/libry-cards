@@ -2,6 +2,8 @@
 
 Маленький бот + HTTP API для рефералов, админ-грантов, **общих картинок карт** и **синка прогресса**.
 
+В корне репозитория лежит **`Dockerfile`** (Python). Без него Bothost из‑за `package.json` Mini App стартует как Node и падает с `ERR_UNKNOWN_FILE_EXTENSION` на `bot/main.py`.
+
 ## Env (Bothost)
 
 | Переменная | Пример | Описание |
