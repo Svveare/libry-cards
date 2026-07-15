@@ -265,7 +265,7 @@
                   "cards": [
                     {
                       "id": "rr-secret-1",
-                      "name": "—",
+                      "name": "Тень двора",
                       "description": "",
                       "rarity": "secret",
                       "slotIndex": 0,
@@ -275,7 +275,7 @@
                     },
                     {
                       "id": "rr-secret-2",
-                      "name": "—",
+                      "name": "Микрофон из кассеты",
                       "description": "",
                       "rarity": "secret",
                       "slotIndex": 1,
@@ -285,7 +285,7 @@
                     },
                     {
                       "id": "rr-secret-3",
-                      "name": "—",
+                      "name": "Ночной эфир",
                       "description": "",
                       "rarity": "secret",
                       "slotIndex": 2,
@@ -295,7 +295,7 @@
                     },
                     {
                       "id": "rr-secret-4",
-                      "name": "—",
+                      "name": "Чёрный куплет",
                       "description": "",
                       "rarity": "secret",
                       "slotIndex": 3,

@@ -9,11 +9,14 @@ import {
 import { downloadBinaryFile, downloadContentJson, downloadDataUrlAsFile } from '../../content/overlay';
 import {
   addBook,
+  addSecretPage,
   addShelf,
+  bookHasSecretPageInData,
   deleteBook,
   deleteShelf,
   updateBook,
   updateCard,
+  updatePage,
   updateShelf,
 } from '../../utils/adminContent';
 import { adminGrant, adminSaveCard, adminBroadcast, hasBackend } from '../../api/backend';
@@ -832,6 +835,20 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
                       >
                         Сохранить книгу
                       </Button>
+                      {!bookHasSecretPageInData(data, book.id) ? (
+                        <Button
+                          fullWidth
+                          variant="secondary"
+                          onClick={() => {
+                            persist(
+                              addSecretPage(data, book.id),
+                              'Секретная страница добавлена',
+                            );
+                          }}
+                        >
+                          Добавить секретную стр.
+                        </Button>
+                      ) : null}
                       <Button
                         fullWidth
                         variant="ghost"
@@ -858,9 +875,31 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
                 <ul className={styles.list}>
                   {book.pages.map((page) => (
                     <li key={page.id} className={styles.pageBlock}>
-                      <p className={styles.pageLabel}>
-                        Стр. {page.number} · {RARITY_LABELS[page.rarity]}
-                      </p>
+                      <div className={styles.pageHead}>
+                        <p className={styles.pageLabel}>
+                          Стр. {page.number} ·{' '}
+                          {page.secret
+                            ? 'Секрет'
+                            : RARITY_LABELS[page.rarity]}
+                        </p>
+                        <label className={styles.secretCheck}>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(page.secret)}
+                            onChange={(e) => {
+                              persist(
+                                updatePage(data, book.id, page.id, {
+                                  secret: e.target.checked,
+                                }),
+                                e.target.checked
+                                  ? 'Страница помечена как секрет'
+                                  : 'Секрет снят со страницы',
+                              );
+                            }}
+                          />
+                          <span>Секрет</span>
+                        </label>
+                      </div>
                       {page.cards.map((c) => (
                         <button
                           key={c.id}

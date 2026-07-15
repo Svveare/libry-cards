@@ -108,22 +108,17 @@
   border-color: color-mix(in srgb, var(--spine-color) 55%, var(--gold-bright));
   box-shadow:
     inset 2px 0 6px rgba(255, 255, 255, 0.22),
-    inset 0 0 18px color-mix(in srgb, var(--spine-color) 35%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--spine-color) 28%, transparent),
     0 0 0 2px color-mix(in srgb, var(--spine-color) 80%, transparent),
-    0 0 16px color-mix(in srgb, var(--spine-color) 85%, transparent),
-    0 0 34px color-mix(in srgb, var(--spine-color) 55%, transparent),
-    0 0 56px color-mix(in srgb, var(--spine-color) 32%, transparent),
+    0 0 10px color-mix(in srgb, var(--spine-color) 70%, transparent),
+    0 0 16px color-mix(in srgb, var(--spine-color) 45%, transparent),
+    0 0 26px color-mix(in srgb, var(--spine-color) 28%, transparent),
     0 6px 16px rgba(0, 0, 0, 0.45);
 }
 
+/* Keep rarity spine fill; secret signal = thin silver ring + soft pulse only */
 .spineSecretUnlocked {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--rarity-secret) 42%, #2a3038) 0%,
-    color-mix(in srgb, var(--spine-color) 35%, #12161c) 55%,
-    #0a0c10 100%
-  );
-  border-color: color-mix(in srgb, var(--rarity-secret) 88%, #ffffff);
+  border-color: color-mix(in srgb, var(--rarity-secret) 80%, #ffffff);
   animation: spineSilverPulse 2.4s ease-in-out infinite;
 }
 
@@ -131,56 +126,31 @@
   0%,
   100% {
     box-shadow:
-      inset 2px 0 6px rgba(255, 255, 255, 0.26),
-      inset 0 0 16px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
-      0 0 14px color-mix(in srgb, var(--rarity-secret) 50%, transparent),
-      0 0 28px color-mix(in srgb, var(--rarity-secret) 28%, transparent),
+      inset 2px 0 4px rgba(255, 255, 255, 0.14),
+      0 0 0 1px color-mix(in srgb, var(--rarity-secret) 70%, transparent),
+      0 0 8px color-mix(in srgb, var(--rarity-secret) 40%, transparent),
+      0 0 14px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
       0 6px 16px rgba(0, 0, 0, 0.45);
   }
   50% {
     box-shadow:
-      inset 2px 0 8px rgba(255, 255, 255, 0.34),
-      inset 0 0 22px color-mix(in srgb, var(--rarity-secret) 32%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--rarity-secret) 78%, transparent),
-      0 0 20px color-mix(in srgb, var(--rarity-secret) 70%, transparent),
-      0 0 42px color-mix(in srgb, var(--rarity-secret) 42%, transparent),
+      inset 2px 0 5px rgba(255, 255, 255, 0.2),
+      0 0 0 2px color-mix(in srgb, var(--rarity-secret) 85%, transparent),
+      0 0 12px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
+      0 0 20px color-mix(in srgb, var(--rarity-secret) 30%, transparent),
       0 6px 16px rgba(0, 0, 0, 0.45);
   }
 }
 
 .spineSecretComplete {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--spine-color) 28%, #1e2228) 0%,
-    #08090c 50%,
-    color-mix(in srgb, var(--rarity-secret) 55%, #14161c) 100%
-  );
-  border-color: color-mix(in srgb, var(--rarity-secret) 92%, #ffffff);
+  border-color: color-mix(in srgb, var(--rarity-secret) 88%, #ffffff);
   box-shadow:
-    inset 2px 0 10px rgba(255, 255, 255, 0.34),
-    inset 0 0 26px color-mix(in srgb, var(--rarity-secret) 36%, transparent),
-    0 0 0 2px color-mix(in srgb, var(--rarity-secret) 85%, transparent),
-    0 0 22px color-mix(in srgb, var(--rarity-secret) 80%, transparent),
-    0 0 44px color-mix(in srgb, var(--rarity-secret) 52%, transparent),
-    0 0 68px color-mix(in srgb, var(--rarity-secret) 34%, transparent),
-    0 0 40px color-mix(in srgb, var(--spine-color) 22%, transparent),
+    inset 2px 0 5px rgba(255, 255, 255, 0.18),
+    0 0 0 2px color-mix(in srgb, var(--rarity-secret) 80%, transparent),
+    0 0 12px color-mix(in srgb, var(--rarity-secret) 50%, transparent),
+    0 0 22px color-mix(in srgb, var(--rarity-secret) 32%, transparent),
+    0 0 30px color-mix(in srgb, var(--rarity-secret) 18%, transparent),
     0 6px 16px rgba(0, 0, 0, 0.5);
-}
-
-.spineSecretUnlocked .spineLabel,
-.spineSecretComplete .spineLabel {
-  color: #f2f5fa;
-  text-shadow:
-    0 0 10px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
-    0 1px 8px rgba(0, 0, 0, 0.75);
-}
-
-.spineSecretUnlocked .spineProgress,
-.spineSecretComplete .spineProgress {
-  color: #eef2f8;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--rarity-secret) 35%, transparent);
 }
 
 .spineBaseComplete .spineLabel {
@@ -195,11 +165,10 @@
   .spineSecretUnlocked {
     animation: none;
     box-shadow:
-      inset 2px 0 6px rgba(255, 255, 255, 0.26),
-      inset 0 0 16px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--rarity-secret) 65%, transparent),
-      0 0 18px color-mix(in srgb, var(--rarity-secret) 55%, transparent),
-      0 0 34px color-mix(in srgb, var(--rarity-secret) 32%, transparent),
+      inset 2px 0 4px rgba(255, 255, 255, 0.14),
+      0 0 0 1px color-mix(in srgb, var(--rarity-secret) 75%, transparent),
+      0 0 10px color-mix(in srgb, var(--rarity-secret) 45%, transparent),
+      0 0 16px color-mix(in srgb, var(--rarity-secret) 25%, transparent),
       0 6px 16px rgba(0, 0, 0, 0.45);
   }
 }

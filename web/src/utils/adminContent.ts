@@ -239,3 +239,93 @@ export function updateCard(
   }
   return data;
 }
+
+function findBook(
+  data: ContentData,
+  bookId: string,
+): { standId: string; shelfId: string; book: Book } | null {
+  for (const stand of data.stands) {
+    for (const shelf of stand.shelves) {
+      const book = shelf.books.find((b) => b.id === bookId);
+      if (book) return { standId: stand.id, shelfId: shelf.id, book };
+    }
+  }
+  return null;
+}
+
+export function bookHasSecretPageInData(
+  data: ContentData,
+  bookId: string,
+): boolean {
+  const found = findBook(data, bookId);
+  return Boolean(found?.book.pages.some((p) => p.secret));
+}
+
+/** Append a secret page (page 6 or next free number) with 4 empty secret slots. */
+export function addSecretPage(data: ContentData, bookId: string): ContentData {
+  const next = structuredClone(data);
+  const found = findBook(next, bookId);
+  if (!found) return data;
+  if (found.book.pages.some((p) => p.secret)) return data;
+
+  const used = collectIds(next);
+  const nextNumber =
+    found.book.pages.reduce((max, p) => Math.max(max, p.number), 0) + 1 || 6;
+  const pageId = uniqueId(`${bookId}-page-${nextNumber}`, used);
+  const cards: Card[] = [0, 1, 2, 3].map((slot) => ({
+    id: uniqueId(`${bookId}-secret-${slot + 1}`, used),
+    name: '—',
+    description: '',
+    rarity: 'secret',
+    slotIndex: slot,
+    bookId,
+    shelfId: found.shelfId,
+    standId: found.standId,
+  }));
+  const page: Page = {
+    id: pageId,
+    number: nextNumber,
+    rarity: 'secret',
+    secret: true,
+    cards,
+  };
+  found.book.pages.push(page);
+  return next;
+}
+
+export function updatePage(
+  data: ContentData,
+  bookId: string,
+  pageId: string,
+  patch: Partial<Pick<Page, 'secret' | 'number' | 'rarity'>>,
+): ContentData {
+  const next = structuredClone(data);
+  const found = findBook(next, bookId);
+  if (!found) return data;
+  const page = found.book.pages.find((p) => p.id === pageId);
+  if (!page) return data;
+
+  if (patch.number !== undefined) page.number = patch.number;
+  if (patch.rarity !== undefined) page.rarity = patch.rarity;
+  if (patch.secret !== undefined) {
+    if (patch.secret) {
+      page.secret = true;
+      if (page.rarity !== 'secret') page.rarity = 'secret';
+      for (const card of page.cards) {
+        if (card.rarity !== 'secret') card.rarity = 'secret';
+      }
+    } else {
+      delete page.secret;
+    }
+  }
+  return next;
+}
+
+/** Add a secret page if the book does not already have one. */
+export function ensureSecretPage(
+  data: ContentData,
+  bookId: string,
+): ContentData {
+  if (bookHasSecretPageInData(data, bookId)) return data;
+  return addSecretPage(data, bookId);
+}

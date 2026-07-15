@@ -124,8 +124,16 @@ export const LibryPromo: React.FC = () => {
       <ImpactFlash frame={frame} at={FRAME.chestEnd} />
       <ImpactFlash frame={frame} at={FRAME.collectEnd} />
       <ImpactFlash frame={frame} at={FRAME.dailyEnd} />
-      <ImpactFlash frame={frame} at={FRAME.secretEnd} color={colors.secret} />
-      <ImpactFlash frame={frame} at={FRAME.payoffEnd} color={colors.gold} />
+      <ImpactFlash
+        frame={frame}
+        at={FRAME.secretEnd}
+        color="rgba(140, 150, 170, 0.7)"
+      />
+      <ImpactFlash
+        frame={frame}
+        at={FRAME.payoffEnd}
+        color="rgba(224, 184, 74, 0.7)"
+      />
 
       <Audio src={staticFile('whoosh-bed.wav')} volume={0.26} />
       <Audio src={staticFile('promo-bg.mp3')} volume={musicVol} />

@@ -34,7 +34,7 @@ export function getSecretPageOffers(
         const standRef = getStandById(shelfRef.standId) ?? stand;
         offers.push({
           bookId: book.id,
-          title: `Секрет · ${book.name}`,
+          title: `Секретная страница · ${book.name}`,
           description: `${standRef.name} · ${shelfRef.name}`,
           price: 1,
         });

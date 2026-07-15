@@ -177,7 +177,7 @@ export function SparkBurst({
   );
 }
 
-/** 4-frame bright impact cut. */
+/** 4-frame soft impact cut. */
 export function ImpactFlash({
   frame,
   at,
@@ -189,7 +189,7 @@ export function ImpactFlash({
 }) {
   const local = frame - at;
   if (local < 0 || local > 4) return null;
-  const op = interpolate(local, [0, 1, 4], [0, 0.72, 0], {
+  const op = interpolate(local, [0, 1, 4], [0, 0.32, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -202,7 +202,7 @@ export function ImpactFlash({
         opacity: op,
         pointerEvents: 'none',
         zIndex: 80,
-        mixBlendMode: 'screen',
+        mixBlendMode: 'soft-light',
       }}
     />
   );

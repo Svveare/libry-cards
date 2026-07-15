@@ -33,6 +33,6 @@ export const colors = {
   rare: '#5ab0ff',
   epic: '#d86aff',
   legend: '#ffb428',
-  flash: 'rgba(255, 244, 210, 0.92)',
+  flash: 'rgba(160, 110, 40, 0.85)',
   secret: '#c8d0dc',
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { Card } from '../../types';
 import {
   getBookById,
@@ -8,7 +8,7 @@ import {
   isBookBaseComplete,
   isBookFullyComplete,
 } from '../../content/loader';
-import { RARITY_LABELS } from '../../types';
+import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import { Header } from '../ui/Header';
 import { CardSlot } from './CardSlot';
 import { CardDetailModal } from './CardDetailModal';
@@ -70,7 +70,21 @@ export function BookView({
       <Header title={book.name} subtitle={shelf?.name} onBack={onBack} />
       <div className={styles.bookChrome}>
         <div className={metaClass}>
-          <span className={styles.rarity}>{RARITY_LABELS[book.rarity]}</span>
+          <div className={styles.metaLeft}>
+            <span
+              className={styles.rarity}
+              style={
+                {
+                  '--rarity-color': RARITY_COLORS[book.rarity],
+                } as CSSProperties
+              }
+            >
+              {RARITY_LABELS[book.rarity]}
+            </span>
+            {fullySecret || secretUnlocked ? (
+              <span className={styles.secretBadge}>секрет</span>
+            ) : null}
+          </div>
           <span className={styles.progress}>
             {collected}/{total} карточек
           </span>

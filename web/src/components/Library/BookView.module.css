@@ -14,7 +14,7 @@
   background:
     radial-gradient(
       ellipse 90% 55% at 50% 0%,
-      color-mix(in srgb, var(--gold) 22%, transparent),
+      color-mix(in srgb, var(--gold) 18%, transparent),
       transparent 70%
     ),
     linear-gradient(
@@ -25,8 +25,8 @@
   border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--gold-bright) 25%, transparent),
-    0 0 28px color-mix(in srgb, var(--gold) 35%, transparent),
-    0 0 56px color-mix(in srgb, var(--gold) 18%, transparent),
+    0 0 14px color-mix(in srgb, var(--gold) 32%, transparent),
+    0 0 26px color-mix(in srgb, var(--gold) 16%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--gold-bright) 35%, transparent);
 }
 
@@ -35,11 +35,15 @@
   background:
     radial-gradient(
       ellipse 90% 55% at 50% 0%,
-      color-mix(in srgb, var(--rarity-secret) 30%, transparent),
+      color-mix(in srgb, var(--rarity-secret) 18%, transparent),
       transparent 70%
     ),
-    linear-gradient(180deg, #1c2128 0%, #0e1014 55%, #15181e 100%);
-  border: 1px solid color-mix(in srgb, var(--rarity-secret) 70%, transparent);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface) 92%, #1c2128) 0%,
+      color-mix(in srgb, var(--bg-deep) 80%, transparent) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--rarity-secret) 65%, transparent);
   animation: bookSilverPulse 2.6s ease-in-out infinite;
 }
 
@@ -48,16 +52,16 @@
   100% {
     box-shadow:
       0 0 0 1px color-mix(in srgb, #ffffff 14%, transparent),
-      0 0 24px color-mix(in srgb, var(--rarity-secret) 32%, transparent),
-      0 0 48px color-mix(in srgb, var(--rarity-secret) 16%, transparent),
-      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 32%, transparent);
+      0 0 12px color-mix(in srgb, var(--rarity-secret) 28%, transparent),
+      0 0 22px color-mix(in srgb, var(--rarity-secret) 14%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 28%, transparent);
   }
   50% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #ffffff 22%, transparent),
-      0 0 34px color-mix(in srgb, var(--rarity-secret) 48%, transparent),
-      0 0 64px color-mix(in srgb, var(--rarity-secret) 28%, transparent),
-      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 48%, transparent);
+      0 0 0 1px color-mix(in srgb, #ffffff 20%, transparent),
+      0 0 16px color-mix(in srgb, var(--rarity-secret) 40%, transparent),
+      0 0 30px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 40%, transparent);
   }
 }
 
@@ -66,26 +70,30 @@
   background:
     radial-gradient(
       ellipse 90% 55% at 50% 0%,
-      color-mix(in srgb, var(--rarity-secret) 36%, transparent),
+      color-mix(in srgb, var(--rarity-secret) 22%, transparent),
       transparent 70%
     ),
-    linear-gradient(180deg, #1a1d22 0%, #0c0d10 55%, #12151a 100%);
-  border: 1px solid color-mix(in srgb, var(--rarity-secret) 78%, transparent);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface) 90%, #1a1d22) 0%,
+      color-mix(in srgb, var(--bg-deep) 82%, transparent) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--rarity-secret) 72%, transparent);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #ffffff 24%, transparent),
-    0 0 34px color-mix(in srgb, var(--rarity-secret) 52%, transparent),
-    0 0 68px color-mix(in srgb, var(--rarity-secret) 30%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 50%, transparent);
+    0 0 0 1px color-mix(in srgb, #ffffff 20%, transparent),
+    0 0 16px color-mix(in srgb, var(--rarity-secret) 42%, transparent),
+    0 0 30px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 40%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bookAuraUnlocked .bookChrome {
     animation: none;
     box-shadow:
-      0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent),
-      0 0 28px color-mix(in srgb, var(--rarity-secret) 40%, transparent),
-      0 0 56px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
-      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 40%, transparent);
+      0 0 0 1px color-mix(in srgb, #ffffff 16%, transparent),
+      0 0 14px color-mix(in srgb, var(--rarity-secret) 35%, transparent),
+      0 0 26px color-mix(in srgb, var(--rarity-secret) 18%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 35%, transparent);
   }
 }
 
@@ -111,50 +119,62 @@
   box-shadow:
     var(--shadow-shelf),
     0 0 0 1px color-mix(in srgb, var(--gold-bright) 20%, transparent),
-    0 0 24px color-mix(in srgb, var(--gold) 40%, transparent),
-    0 0 40px color-mix(in srgb, var(--gold) 18%, transparent);
+    0 0 12px color-mix(in srgb, var(--gold) 35%, transparent),
+    0 0 20px color-mix(in srgb, var(--gold) 16%, transparent);
 }
 
 .metaUnlocked {
-  background: linear-gradient(90deg, #181c22, #2c323c);
-  border-color: color-mix(in srgb, var(--rarity-secret) 72%, transparent);
+  border-color: color-mix(in srgb, var(--rarity-secret) 65%, transparent);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #ffffff 16%, transparent),
-    0 0 22px color-mix(in srgb, var(--rarity-secret) 38%, transparent),
-    0 0 40px color-mix(in srgb, var(--rarity-secret) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, #ffffff 14%, transparent),
+    0 0 12px color-mix(in srgb, var(--rarity-secret) 32%, transparent),
+    0 0 20px color-mix(in srgb, var(--rarity-secret) 14%, transparent),
     var(--shadow-shelf);
 }
 
 .metaSecret {
-  background: linear-gradient(90deg, #16181c, #2a2e36);
-  border-color: color-mix(in srgb, var(--rarity-secret) 82%, transparent);
+  border-color: color-mix(in srgb, var(--rarity-secret) 75%, transparent);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent),
-    0 0 30px color-mix(in srgb, var(--rarity-secret) 52%, transparent),
-    0 0 50px color-mix(in srgb, var(--rarity-secret) 26%, transparent),
+    0 0 0 1px color-mix(in srgb, #ffffff 16%, transparent),
+    0 0 14px color-mix(in srgb, var(--rarity-secret) 40%, transparent),
+    0 0 24px color-mix(in srgb, var(--rarity-secret) 20%, transparent),
     var(--shadow-shelf);
 }
 
-.metaUnlocked .rarity,
-.metaSecret .rarity {
-  color: var(--rarity-secret);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--rarity-secret) 45%, transparent);
-}
-
 .metaGlow .rarity {
-  text-shadow: 0 0 12px color-mix(in srgb, var(--gold) 50%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--gold) 45%, transparent);
 }
 
 .pageSecret .pageTitle {
   color: var(--rarity-secret);
 }
 
+.metaLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .rarity {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--rarity-color, var(--gold));
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.secretBadge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--bg-deep);
+  background: color-mix(in srgb, var(--rarity-secret) 88%, #ffffff);
+  padding: 2px 7px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--rarity-secret) 35%, transparent);
 }
 
 .progress {
