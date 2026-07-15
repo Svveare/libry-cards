@@ -20,6 +20,7 @@ import {
 } from '../utils/shop';
 import {
   isSameUtcDay,
+  middayHuntKindForDay,
   QUESTS,
   questClaimKey,
   type QuestId,
@@ -33,13 +34,18 @@ import {
   type AchievementId,
 } from '../utils/achievements';
 import { applyGrant } from '../utils/grantReward';
-import { bumpDayStats, withCurrentDayStats } from '../utils/dayStats';
+import {
+  bumpDayStats,
+  isAfterMiddayUnlock,
+  touchFirstActive,
+  withCurrentDayStats,
+} from '../utils/dayStats';
+import { trackRewardOutcome } from '../utils/playTrack';
 import { tickDailyStreak } from '../utils/streak';
 import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
-  BP_XP,
   battlePassLevel,
   currentBattlePassSeasonId,
   defaultBattlePassProgress,
@@ -161,7 +167,13 @@ export function useProgress(userId: string, initData = '') {
     if (!canAccessChannelFeature(Boolean(prev.channelConfirmedAt), 'daily')) {
       return { status: 'channel' };
     }
-    if (!canOpenDaily(prev.lastDailyOpenAt, prev.bonusCaseOpens)) {
+    if (
+      !canOpenDaily(
+        prev.lastDailyOpenAt,
+        prev.bonusCaseOpens,
+        prev.lastBonusCaseOpenAt,
+      )
+    ) {
       return { status: 'cooldown' };
     }
     return { status: 'ok', reward: rollDailyReward(prev.collectedCardIds) };
@@ -194,11 +206,11 @@ export function useProgress(userId: string, initData = '') {
         prev.lastDailyOpenAt,
         prev.bonusCaseOpens,
       );
+      const now = new Date().toISOString();
       let next: UserProgress = {
         ...prev,
-        lastDailyOpenAt: useBonus
-          ? prev.lastDailyOpenAt
-          : new Date().toISOString(),
+        lastDailyOpenAt: useBonus ? prev.lastDailyOpenAt : now,
+        lastBonusCaseOpenAt: useBonus ? now : prev.lastBonusCaseOpenAt,
         bonusCaseOpens: useBonus
           ? Math.max(0, prev.bonusCaseOpens - 1)
           : prev.bonusCaseOpens,
@@ -207,6 +219,7 @@ export function useProgress(userId: string, initData = '') {
       const beforeInk = next;
       next = applyReward(next, reward);
       next = trackInkFromReward(beforeInk, next);
+      next = trackRewardOutcome(prev, next, reward, { usedBonus: useBonus });
       const streaked = tickDailyStreak(next);
       commit(streaked.progress);
     },
@@ -244,6 +257,7 @@ export function useProgress(userId: string, initData = '') {
               lifetimeChestOpens: prev.lifetimeChestOpens + 1,
             };
       next = bumpDayStats(next, { chestOpens: 1 });
+      next = touchFirstActive(next);
       commit(next);
     },
     [commit],
@@ -254,15 +268,18 @@ export function useProgress(userId: string, initData = '') {
       const prev = progressRef.current;
       let next = applyReward(prev, reward);
       next = trackInkFromReward(prev, next);
+      next = trackRewardOutcome(prev, next, reward);
       commit(next);
     },
     [commit],
   );
 
   const commitPaidCase = useCallback(
-    (reward: DailyReward, price: number) => {
+    (reward: DailyReward, price: number, tier?: CaseTier) => {
       const prev = progressRef.current;
       if (prev.coins < price) return;
+      const risk = tier === 'mid' || tier === 'hot';
+      const hot = tier === 'hot';
       let next: UserProgress = {
         ...prev,
         coins: prev.coins - price,
@@ -272,6 +289,10 @@ export function useProgress(userId: string, initData = '') {
       const before = next;
       next = applyReward(next, reward);
       next = trackInkFromReward(before, next);
+      next = trackRewardOutcome(prev, next, reward, {
+        riskCase: risk,
+        hotOrPack: hot,
+      });
       commit(next);
     },
     [commit],
@@ -292,18 +313,31 @@ export function useProgress(userId: string, initData = '') {
     if (questId === 'open_daily') {
       return (
         isSameUtcDay(prev.lastDailyOpenAt) ||
-        prev.dailyStreakLastDate === stats.day
+        prev.dailyStreakLastDate === stats.day ||
+        stats.bonusCaseOpens > 0
       );
     }
-    if (questId === 'visit_library')
-      return isSameUtcDay(prev.visitedLibraryAt);
+    if (questId === 'new_card') return stats.newCards > 0;
+    if (questId === 'pull_epic') return stats.epicPlus > 0;
+    if (questId === 'ink_buy') return stats.inkBuys > 0;
     if (questId === 'open_chest') return stats.chestOpens > 0;
-    if (questId === 'spend_shop') return stats.spentCoins > 0;
-    if (questId === 'open_paid_case') return stats.paidCases > 0;
-    if (questId === 'ink_today')
-      return stats.inkEarned > 0 || stats.inkBuys > 0;
-    if (questId === 'claim_pass_or_ach')
-      return stats.passClaims > 0 || stats.achievementClaims > 0;
+    if (questId === 'risk_case') return stats.riskCases > 0;
+    if (questId === 'midday_hunt') {
+      if (!isAfterMiddayUnlock(stats)) return false;
+      const kind = middayHuntKindForDay(stats.day);
+      switch (kind) {
+        case 'bonus_spin':
+          return stats.middayBonusOpens > 0;
+        case 'rare_or_better':
+          return stats.middayRarePlus > 0;
+        case 'ink_missing':
+          return stats.middayInkBuys > 0;
+        case 'money_hit_25':
+          return stats.middayMoneyHit25 > 0;
+        case 'hot_or_pack':
+          return stats.middayHotOrPack > 0;
+      }
+    }
     return false;
   }, []);
 
@@ -329,7 +363,7 @@ export function useProgress(userId: string, initData = '') {
       ...next,
       claimedQuestIds: [...next.claimedQuestIds, key],
     };
-    next = addXp(next, BP_XP.quest);
+    next = addXp(next, def.xp);
     commit(next);
     return true;
   }, [commit, isQuestComplete]);
@@ -458,6 +492,10 @@ export function useProgress(userId: string, initData = '') {
         reward,
       );
       next = bumpDayStats(next, { inkBuys: 1 });
+      if (isAfterMiddayUnlock(next.dayStats)) {
+        next = bumpDayStats(next, { middayInkBuys: 1 });
+      }
+      next = trackRewardOutcome(prev, next, reward);
       commit(next);
       return { status: 'ok', card };
     },
@@ -492,15 +530,31 @@ export function useProgress(userId: string, initData = '') {
         ...prev,
         referralCount: Math.max(prev.referralCount, payload.referralCount),
       };
-      if (payload.pendingCoins > 0) {
-        next = { ...next, coins: next.coins + payload.pendingCoins };
-      }
-      if (payload.pendingBonusCases > 0) {
+
+      const claimId = payload.claimId;
+      const alreadyApplied =
+        Boolean(claimId) && prev.appliedClaimIds.includes(claimId!);
+
+      if (
+        claimId &&
+        !alreadyApplied &&
+        (payload.pendingCoins > 0 || payload.pendingBonusCases > 0)
+      ) {
+        if (payload.pendingCoins > 0) {
+          next = { ...next, coins: next.coins + payload.pendingCoins };
+        }
+        if (payload.pendingBonusCases > 0) {
+          next = {
+            ...next,
+            bonusCaseOpens: next.bonusCaseOpens + payload.pendingBonusCases,
+          };
+        }
         next = {
           ...next,
-          bonusCaseOpens: next.bonusCaseOpens + payload.pendingBonusCases,
+          appliedClaimIds: [...next.appliedClaimIds, claimId].slice(-30),
         };
       }
+
       if (
         payload.inviteeReferrerId &&
         !next.referredByUserId &&
@@ -517,7 +571,8 @@ export function useProgress(userId: string, initData = '') {
         next.bonusCaseOpens !== prev.bonusCaseOpens ||
         next.referralCount !== prev.referralCount ||
         next.referredByUserId !== prev.referredByUserId ||
-        next.referralBonusClaimed !== prev.referralBonusClaimed
+        next.referralBonusClaimed !== prev.referralBonusClaimed ||
+        next.appliedClaimIds !== prev.appliedClaimIds
       ) {
         commit(next);
       }
@@ -554,7 +609,9 @@ export function useProgress(userId: string, initData = '') {
         if (!useToken && item.price > 0) {
           base = bumpDayStats(base, { spentCoins: item.price });
         }
-        commit(applyReward(base, reward));
+        let next = applyReward(base, reward);
+        next = trackRewardOutcome(prev, next, reward);
+        commit(next);
         return {
           status: 'ok',
           reward,
@@ -571,7 +628,7 @@ export function useProgress(userId: string, initData = '') {
       ) {
         const tier = action.replace('case_', '') as CaseTier;
         const reward = rollPaidCaseReward(prev.collectedCardIds, tier);
-        return { status: 'case', reward, price: item.price };
+        return { status: 'case', reward, price: item.price, tier };
       }
 
       if (action === 'reset_chest') {
@@ -619,7 +676,11 @@ export function useProgress(userId: string, initData = '') {
           coins: prev.coins - item.price,
         };
         next = bumpDayStats(next, { spentCoins: item.price });
-        commit(applyReward(next, reward));
+        next = applyReward(next, reward);
+        next = trackRewardOutcome(prev, next, reward, {
+          hotOrPack: action === 'pack_epic' || action === 'pack_legendary',
+        });
+        commit(next);
         return { status: 'ok', reward, message: 'Карта получена' };
       }
 

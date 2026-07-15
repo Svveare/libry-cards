@@ -11,8 +11,10 @@ const ITEM_GAP = 8;
 const ROLL_MS = 3200;
 const SETTLE_MS = 900;
 const JITTER_INSET = 16;
-const OVERSHOOT_MIN = 36;
-const OVERSHOOT_MAX = 88;
+/** Overshoot stays inside the winner cell (visual land = awarded cell). */
+const OVERSHOOT_MIN = 8;
+const OVERSHOOT_MAX = 28;
+const EDGE_PAD = 4;
 
 /** Smooth ease-out: keeps speed then soft brake (no mid-curve kink). */
 const EASE_ROLL = 'cubic-bezier(0.12, 0.7, 0.16, 1)';
@@ -49,15 +51,24 @@ export function CaseStrip({ items, spinning, onSpinEnd }: CaseStripProps) {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
+    const cell = track.children[WINNER_INDEX] as HTMLElement | undefined;
+    const itemLeft = cell?.offsetLeft ?? WINNER_INDEX * (ITEM_WIDTH + ITEM_GAP);
+    const itemWidth = cell?.offsetWidth ?? ITEM_WIDTH;
+
     const center = viewport.clientWidth / 2;
-    const itemSpan = ITEM_WIDTH + ITEM_GAP;
-    const itemLeft = WINNER_INDEX * itemSpan;
     const minHit = itemLeft + JITTER_INSET;
-    const maxHit = itemLeft + ITEM_WIDTH - JITTER_INSET;
-    const hitX = minHit + Math.random() * (maxHit - minHit);
+    const maxHit = itemLeft + itemWidth - JITTER_INSET;
+    const hitX = minHit + Math.random() * Math.max(0, maxHit - minHit);
     const target = Math.round(hitX - center);
-    const overshoot =
+
+    const hitOffset = hitX - itemLeft;
+    const maxOvershoot = Math.max(
+      0,
+      itemWidth - JITTER_INSET - hitOffset - EDGE_PAD,
+    );
+    const rawOvershoot =
       OVERSHOOT_MIN + Math.random() * (OVERSHOOT_MAX - OVERSHOOT_MIN);
+    const overshoot = Math.min(rawOvershoot, maxOvershoot);
     const peak = Math.round(target + overshoot);
 
     const prefersReduced =
@@ -78,34 +89,46 @@ export function CaseStrip({ items, spinning, onSpinEnd }: CaseStripProps) {
       return;
     }
 
-    // Reset without transition, then next frames start GPU transitions.
     setX(0, 'none');
 
-    let settleTimer = 0;
-    let rollTimer = 0;
+    let settleFallback = 0;
+    let rollFallback = 0;
+    let phase: 'roll' | 'settle' = 'roll';
     let cancelled = false;
+
+    const onTransitionEnd = (e: TransitionEvent) => {
+      if (cancelled || e.propertyName !== 'transform') return;
+      if (phase === 'roll') {
+        phase = 'settle';
+        window.clearTimeout(rollFallback);
+        setX(target, `transform ${SETTLE_MS}ms ${EASE_SETTLE}`);
+        settleFallback = window.setTimeout(finish, SETTLE_MS + 80);
+        return;
+      }
+      window.clearTimeout(settleFallback);
+      finish();
+    };
+
+    track.addEventListener('transitionend', onTransitionEnd);
 
     const raf1 = requestAnimationFrame(() => {
       if (cancelled) return;
-      // Force style flush so the browser sees 0 before animating to peak.
       void track.offsetWidth;
       setX(peak, `transform ${ROLL_MS}ms ${EASE_ROLL}`);
-
-      rollTimer = window.setTimeout(() => {
-        if (cancelled) return;
+      rollFallback = window.setTimeout(() => {
+        if (cancelled || endedRef.current || phase !== 'roll') return;
+        phase = 'settle';
         setX(target, `transform ${SETTLE_MS}ms ${EASE_SETTLE}`);
-        settleTimer = window.setTimeout(() => {
-          if (cancelled) return;
-          finish();
-        }, SETTLE_MS + 20);
-      }, ROLL_MS + 20);
+        settleFallback = window.setTimeout(finish, SETTLE_MS + 80);
+      }, ROLL_MS + 80);
     });
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf1);
-      window.clearTimeout(rollTimer);
-      window.clearTimeout(settleTimer);
+      window.clearTimeout(rollFallback);
+      window.clearTimeout(settleFallback);
+      track.removeEventListener('transitionend', onTransitionEnd);
     };
   }, [spinning, items]);
 

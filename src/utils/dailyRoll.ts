@@ -177,24 +177,36 @@ function rewardToStripKind(reward: DailyReward): DailyRewardKind {
 
 type TeaseCell = { kind: DailyRewardKind; moneyAmount?: number };
 
-/** “Near miss” baits shown next to the winner. */
-function pickTeaseNeighbors(excludeMoney: boolean): [TeaseCell, TeaseCell] {
-  const pool: TeaseCell[] = excludeMoney
+/** “Near miss” baits next to the winner. At most one legendary neighbor. */
+function pickTeaseNeighbors(
+  excludeMoney: boolean,
+  winnerIsMoney: boolean,
+): [TeaseCell, TeaseCell] {
+  // Soft pool next to money — avoids “saw legendary, got coins” after a long linger.
+  const softPool: TeaseCell[] = [
+    { kind: 'book' },
+    { kind: 'epic' },
+    { kind: 'rare' },
+    { kind: 'ink' },
+    { kind: 'common' },
+  ];
+  const hotPool: TeaseCell[] = excludeMoney
     ? [
         { kind: 'legendary' },
         { kind: 'book' },
         { kind: 'epic' },
-        { kind: 'legendary' },
+        { kind: 'rare' },
       ]
     : [
         { kind: 'legendary' },
         { kind: 'book' },
-        { kind: 'money', moneyAmount: 100 },
-        { kind: 'legendary' },
-        { kind: 'book' },
-        { kind: 'money', moneyAmount: 100 },
+        { kind: 'epic' },
+        { kind: 'money', moneyAmount: 50 },
+        { kind: 'rare' },
+        { kind: 'ink' },
       ];
 
+  const pool = winnerIsMoney ? softPool : hotPool;
   const shuffle = [...pool];
   for (let i = shuffle.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -202,7 +214,7 @@ function pickTeaseNeighbors(excludeMoney: boolean): [TeaseCell, TeaseCell] {
   }
 
   const left = shuffle[0]!;
-  const right =
+  let right =
     shuffle.find(
       (c) =>
         c.kind !== left.kind ||
@@ -210,6 +222,23 @@ function pickTeaseNeighbors(excludeMoney: boolean): [TeaseCell, TeaseCell] {
     ) ??
     shuffle[1] ??
     left;
+
+  // Never put legendary on both sides; never put legendary next to money winner.
+  if (
+    left.kind === 'legendary' &&
+    right.kind === 'legendary'
+  ) {
+    right = softPool.find((c) => c.kind !== 'legendary') ?? { kind: 'epic' };
+  }
+  if (winnerIsMoney && left.kind === 'legendary') {
+    return [
+      softPool.find((c) => c.kind !== 'legendary') ?? { kind: 'epic' },
+      right.kind === 'legendary' ? { kind: 'rare' } : right,
+    ];
+  }
+  if (winnerIsMoney && right.kind === 'legendary') {
+    right = softPool.find((c) => c.kind !== 'legendary') ?? { kind: 'rare' };
+  }
 
   return [left, right];
 }
@@ -232,7 +261,10 @@ export function buildCaseStrip(
     ? ['common', 'rare', 'epic', 'legendary', 'book']
     : ['money', 'common', 'rare', 'epic', 'legendary', 'book'];
 
-  const [teaseLeft, teaseRight] = pickTeaseNeighbors(excludeMoney);
+  const [teaseLeft, teaseRight] = pickTeaseNeighbors(
+    excludeMoney,
+    reward.kind === 'money',
+  );
   const leftIdx = WINNER_INDEX - 1;
   const rightIdx = WINNER_INDEX + 1;
 

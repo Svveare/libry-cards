@@ -295,6 +295,7 @@ function App() {
             />
             <DailyBonusView
               lastDailyOpenAt={progress.lastDailyOpenAt}
+              lastBonusCaseOpenAt={progress.lastBonusCaseOpenAt}
               bonusCaseOpens={progress.bonusCaseOpens}
               dailyStreak={progress.dailyStreak}
               claimedStreakMilestones={progress.claimedStreakMilestones}
@@ -417,6 +418,7 @@ function App() {
               onBack={goHome}
             />
             <QuestsView
+              dayStats={progress.dayStats}
               isComplete={isQuestComplete}
               isClaimed={isQuestClaimed}
               onClaim={claimQuest}

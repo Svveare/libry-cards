@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { DailyReward, ShopItemId } from '../../types';
+import type { CaseTier, DailyReward, ShopItemId } from '../../types';
 import { config } from '../../content/loader';
 import { useCaseSpin } from '../../hooks/useCaseSpin';
 import type { ShopBuyResult } from '../../utils/shop';
@@ -14,7 +14,7 @@ interface ShopItemViewProps {
   bookTokens: number;
   ink: number;
   onBuy: (itemId: ShopItemId) => ShopBuyResult;
-  onCommitCase: (reward: DailyReward, price: number) => void;
+  onCommitCase: (reward: DailyReward, price: number, tier?: CaseTier) => void;
   onReward: (reward: DailyReward) => void;
   onOpenChestPlus: () => void;
   onOpenFreeChest: () => void;
@@ -44,12 +44,14 @@ export function ShopItemView({
   const item = config.shop.items.find((i) => i.id === itemId);
   const [message, setMessage] = useState<string | null>(null);
   const pendingPrice = useRef(0);
+  const pendingTier = useRef<CaseTier | undefined>(undefined);
 
   const isCase = item ? isCaseAction(item.action) : false;
   const isBook = item ? isBookAction(item.action) : false;
 
   const { spinning, strip, startSpin, handleSpinEnd } = useCaseSpin({
-    onCommit: (reward) => onCommitCase(reward, pendingPrice.current),
+    onCommit: (reward) =>
+      onCommitCase(reward, pendingPrice.current, pendingTier.current),
     onReveal: onReward,
     previewExcludeMoney: isCase,
   });
@@ -98,6 +100,7 @@ export function ShopItemView({
     }
     if (result.status === 'case') {
       pendingPrice.current = result.price;
+      pendingTier.current = result.tier;
       startSpin(result.reward, { excludeMoney: true });
       return;
     }

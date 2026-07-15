@@ -15,6 +15,19 @@ export interface BootstrapResult {
   progress?: UserProgress | null;
 }
 
+export type ApiErrorCode = 'network' | 'unauthorized' | 'http' | 'no_backend';
+
+export class ApiError extends Error {
+  readonly code: ApiErrorCode;
+  readonly status: number;
+
+  constructor(code: ApiErrorCode, message: string, status = 0) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
+}
+
 function baseUrl(): string {
   return (config.backendBaseUrl ?? '').replace(/\/$/, '');
 }
@@ -26,19 +39,36 @@ export function hasBackend(): boolean {
 async function postJson<T>(
   path: string,
   body: Record<string, unknown>,
-): Promise<T | null> {
+): Promise<T> {
   const root = baseUrl();
-  if (!root) return null;
+  if (!root) {
+    throw new ApiError('no_backend', 'backend не настроен');
+  }
   try {
     const res = await fetch(`${root}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      if (res.status === 401) {
+        throw new ApiError(
+          'unauthorized',
+          err.error ?? 'unauthorized',
+          res.status,
+        );
+      }
+      throw new ApiError(
+        'http',
+        err.error ?? `ошибка ${res.status}`,
+        res.status,
+      );
+    }
     return (await res.json()) as T;
-  } catch {
-    return null;
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
+    throw new ApiError('network', 'сеть');
   }
 }
 
@@ -46,32 +76,46 @@ export async function fetchBootstrap(
   initData: string,
   startParam?: string | null,
 ): Promise<BootstrapResult | null> {
-  return postJson<BootstrapResult>('/api/bootstrap', {
-    initData,
-    startParam: startParam ?? undefined,
-  });
+  try {
+    return await postJson<BootstrapResult>('/api/bootstrap', {
+      initData,
+      startParam: startParam ?? undefined,
+    });
+  } catch (e) {
+    console.warn('[bootstrap]', e instanceof ApiError ? e.message : e);
+    return null;
+  }
 }
 
 export async function claimBootstrap(
   initData: string,
   claimId: string,
 ): Promise<boolean> {
-  const res = await postJson<{ ok?: boolean }>('/api/claim', {
-    initData,
-    claimId,
-  });
-  return Boolean(res?.ok);
+  try {
+    const res = await postJson<{ ok?: boolean }>('/api/claim', {
+      initData,
+      claimId,
+    });
+    return Boolean(res?.ok);
+  } catch (e) {
+    console.warn('[claim]', e instanceof ApiError ? e.message : e);
+    return false;
+  }
 }
 
 export async function pushProgress(
   initData: string,
   progress: UserProgress,
 ): Promise<boolean> {
-  const res = await postJson<{ ok?: boolean }>('/api/progress', {
-    initData,
-    progress,
-  });
-  return Boolean(res?.ok);
+  try {
+    const res = await postJson<{ ok?: boolean }>('/api/progress', {
+      initData,
+      progress,
+    });
+    return Boolean(res?.ok);
+  } catch {
+    return false;
+  }
 }
 
 export async function adminGrant(
@@ -83,17 +127,18 @@ export async function adminGrant(
   const root = baseUrl();
   if (!root) return { ok: false, error: 'backend не настроен' };
   try {
-    const res = await fetch(`${root}/api/admin/grant`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, targetUserId, coins, bonusCases }),
+    await postJson<{ ok?: boolean }>('/api/admin/grant', {
+      initData,
+      targetUserId,
+      coins,
+      bonusCases,
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      return { ok: false, error: (err as { error?: string }).error ?? 'ошибка' };
-    }
     return { ok: true };
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.code === 'unauthorized') return { ok: false, error: 'unauthorized' };
+      return { ok: false, error: e.message };
+    }
     return { ok: false, error: 'сеть' };
   }
 }
@@ -114,21 +159,13 @@ export async function adminSaveCard(
   const root = baseUrl();
   if (!root) return { ok: false, error: 'backend не настроен' };
   try {
-    const res = await fetch(`${root}/api/admin/card`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, ...payload }),
-    });
-    const data = (await res.json().catch(() => ({}))) as {
+    const data = await postJson<{
       ok?: boolean;
-      error?: string;
       override?: { image?: string };
-    };
-    if (!res.ok) {
-      return { ok: false, error: data.error ?? 'ошибка' };
-    }
+    }>('/api/admin/card', { initData, ...payload });
     return { ok: true, image: data.override?.image };
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError) return { ok: false, error: e.message };
     return { ok: false, error: 'сеть' };
   }
 }

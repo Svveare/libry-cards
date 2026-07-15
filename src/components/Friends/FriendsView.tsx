@@ -24,6 +24,7 @@ export function FriendsView({
     : buildReferralLink(
         config.telegramBotUsername || 'librycards_bot',
         userId,
+        config.telegramMiniAppShortName,
       );
 
   const copy = async () => {

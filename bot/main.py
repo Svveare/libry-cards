@@ -253,17 +253,42 @@ async def api_bootstrap(request: web.Request) -> web.Response:
     if isinstance(start_param, str) and start_param.startswith("ref_"):
         register_referral(user_id, start_param[4:].strip())
 
-    p = pending_for(user_id)
-    coins = int(p.get("coins", 0))
-    cases = int(p.get("bonusCases", 0))
+    open_claims = STORE.setdefault("open_claims", {})
     claim_id = None
-    if coins or cases:
-        claim_id = f"{user_id}-{int(time.time())}-{coins}-{cases}"
-        STORE.setdefault("open_claims", {})[claim_id] = {
-            "userId": user_id,
-            "coins": coins,
-            "bonusCases": cases,
-        }
+    coins = 0
+    cases = 0
+    for cid, claim in list(open_claims.items()):
+        if claim.get("userId") == user_id:
+            claim_id = cid
+            coins = int(claim.get("coins", 0))
+            cases = int(claim.get("bonusCases", 0))
+            break
+
+    p = pending_for(user_id)
+    pending_coins = int(p.get("coins", 0))
+    pending_cases = int(p.get("bonusCases", 0))
+
+    # Fold pending into an open claim (source of truth until /api/claim).
+    # Re-bootstrap returns the same claim so a lost client apply can retry;
+    # the Mini App skips re-applying if claimId was already applied locally.
+    if pending_coins or pending_cases:
+        if claim_id is None:
+            coins = pending_coins
+            cases = pending_cases
+            claim_id = f"{user_id}-{int(time.time())}-{coins}-{cases}"
+            open_claims[claim_id] = {
+                "userId": user_id,
+                "coins": coins,
+                "bonusCases": cases,
+            }
+        else:
+            coins = coins + pending_coins
+            cases = cases + pending_cases
+            open_claims[claim_id] = {
+                "userId": user_id,
+                "coins": coins,
+                "bonusCases": cases,
+            }
         p["coins"] = 0
         p["bonusCases"] = 0
         save_store(STORE)

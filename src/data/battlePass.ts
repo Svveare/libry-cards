@@ -2,12 +2,12 @@ import type { GrantReward } from '../types';
 
 export const BATTLE_PASS_LEVELS = 30;
 export const BATTLE_PASS_XP_PER_LEVEL = 100;
-/** Reachable in ~1–2 weeks of play; Pro track worth it mid-month. */
+/** Reachable mid-month; Pro sells cards/cases, not a coin printer. */
 export const BATTLE_PASS_PREMIUM_PRICE = 1000;
 
 export const BP_XP = {
-  /** Only source of Battle Pass XP — claimQuest (~2 claims ≈ 1 level). */
-  quest: 50,
+  /** Default XP when claiming a simple quest. Hard/midday use quest.xp. */
+  quest: 35,
 } as const;
 
 export type PassTrack = 'free' | 'premium';
@@ -53,6 +53,10 @@ function levelTier(level: number): BattlePassLevelDef['tier'] {
   return 'normal';
 }
 
+/**
+ * Target season totals (approx):
+ * Free ~850c + 5–6 cases; Premium ~950c + ~10 cases + cards.
+ */
 function buildLevel(level: number): BattlePassLevelDef {
   const tier = levelTier(level);
 
@@ -60,77 +64,74 @@ function buildLevel(level: number): BattlePassLevelDef {
     return {
       level,
       tier,
-      free: [card('legendary'), cases(3), coins(250), ink(25), book(2)],
+      free: [card('legendary'), cases(2), coins(120), ink(18), book(1)],
       premium: [
         card('legendary'),
         card('epic'),
-        cases(5),
-        coins(500),
-        ink(40),
-        book(3),
+        cases(3),
+        coins(200),
+        ink(28),
+        book(2),
       ],
     };
   }
 
   if (tier === 'great') {
-    // 10, 20
     return {
       level,
       tier,
-      free: [card(level >= 20 ? 'epic' : 'rare'), cases(2), coins(120)],
+      free: [card(level >= 20 ? 'epic' : 'rare'), cases(1), coins(70)],
       premium: [
         card(level >= 20 ? 'legendary' : 'epic'),
-        cases(3),
-        coins(200),
-        ink(18),
+        cases(2),
+        coins(110),
+        ink(12),
       ],
     };
   }
 
   if (tier === 'plus') {
-    // 5, 15, 25
     return {
       level,
       tier,
-      free: [cases(1), coins(70), ink(10)],
-      premium: [book(1), cases(2), coins(120), ink(14)],
+      free: [cases(1), coins(40), ink(8)],
+      premium: [book(1), cases(1), coins(70), ink(10)],
     };
   }
 
-  // Normal rung — alternating soft rewards
   const step = ((level - 1) % 4) + 1;
   if (step === 1) {
     return {
       level,
       tier,
-      free: coins(25 + level),
-      premium: [coins(45 + level * 2), ink(4)],
+      free: coins(16 + level),
+      premium: [coins(22 + level), ink(3)],
     };
   }
   if (step === 2) {
     return {
       level,
       tier,
-      free: ink(3 + Math.floor(level / 5)),
-      premium: ink(8 + Math.floor(level / 4)),
+      free: ink(2 + Math.floor(level / 5)),
+      premium: ink(5 + Math.floor(level / 4)),
     };
   }
   if (step === 3) {
     return {
       level,
       tier,
-      free: coins(30 + level),
+      free: coins(18 + level),
       premium:
         level >= 12
-          ? [coins(50 + level * 2), book(1)]
-          : [coins(50 + level * 2)],
+          ? [coins(24 + level), book(1)]
+          : [coins(24 + level)],
     };
   }
   return {
     level,
     tier,
-    free: ink(4 + Math.floor(level / 6)),
-    premium: [coins(40 + level), ink(6 + Math.floor(level / 5))],
+    free: ink(3 + Math.floor(level / 6)),
+    premium: [coins(18 + Math.floor(level / 2)), ink(4 + Math.floor(level / 5))],
   };
 }
 

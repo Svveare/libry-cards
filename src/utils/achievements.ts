@@ -248,7 +248,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'pass_pro',
     title: 'Пропуск Pro',
     description: 'Купи Pro-трек сезона',
-    reward: { kind: 'coins', amount: 100 },
+    reward: { kind: 'ink', amount: 15 },
   },
   {
     id: 'referrals_3',

@@ -5,8 +5,11 @@ import { useCaseSpin } from '../../hooks/useCaseSpin';
 import { useCooldownMs } from '../../hooks/useCooldownMs';
 import { config, getChannelUrl } from '../../content/loader';
 import {
+  canOpenBonusCase,
   canOpenDaily,
+  getTimeUntilBonusCase,
   getTimeUntilNextOpen,
+  willUseBonusCaseOpen,
 } from '../../utils/dailyOpen';
 import { formatCooldown } from '../../utils/cooldown';
 import {
@@ -20,6 +23,7 @@ import styles from './DailyBonusView.module.css';
 
 interface DailyBonusViewProps {
   lastDailyOpenAt: string | null;
+  lastBonusCaseOpenAt: string | null;
   bonusCaseOpens: number;
   dailyStreak: number;
   claimedStreakMilestones: number[];
@@ -34,6 +38,7 @@ interface DailyBonusViewProps {
 
 export function DailyBonusView({
   lastDailyOpenAt,
+  lastBonusCaseOpenAt,
   bonusCaseOpens,
   dailyStreak,
   claimedStreakMilestones,
@@ -50,6 +55,10 @@ export function DailyBonusView({
     (at: string | null) => getTimeUntilNextOpen(at),
     [],
   );
+  const getBonusRemaining = useCallback(
+    (at: string | null) => getTimeUntilBonusCase(at),
+    [],
+  );
 
   const { spinning, strip, startSpin, handleSpinEnd } = useCaseSpin({
     onCommit,
@@ -60,13 +69,22 @@ export function DailyBonusView({
     config.telegramChannel.enabled && config.telegramChannel.requiredForDaily;
   const needsChannel = channelRequired && !channelConfirmed;
   const freeReady = canOpenDaily(lastDailyOpenAt, 0);
-  const canOpen = canOpenDaily(lastDailyOpenAt, bonusCaseOpens) && !needsChannel;
+  const wouldUseBonus = willUseBonusCaseOpen(lastDailyOpenAt, bonusCaseOpens);
+  const bonusReady = canOpenBonusCase(lastBonusCaseOpenAt);
+  const canOpen =
+    canOpenDaily(lastDailyOpenAt, bonusCaseOpens, lastBonusCaseOpenAt) &&
+    !needsChannel;
   const usingBonus = !freeReady && bonusCaseOpens > 0;
   const available = canOpen && !spinning;
   const cooldownMs = useCooldownMs(
     lastDailyOpenAt,
     getRemaining,
-    !freeReady && !usingBonus,
+    !freeReady && !(usingBonus && bonusReady),
+  );
+  const bonusCooldownMs = useCooldownMs(
+    lastBonusCaseOpenAt,
+    getBonusRemaining,
+    wouldUseBonus && !bonusReady && bonusCaseOpens > 0,
   );
 
   const handleOpen = () => {
@@ -81,6 +99,12 @@ export function DailyBonusView({
       return;
     }
     if (result.status === 'cooldown') {
+      if (bonusCaseOpens > 0 && !bonusReady) {
+        setMessage(
+          `Бонус-кейс доступен через ${formatCooldown(bonusCooldownMs)}`,
+        );
+        return;
+      }
       setMessage(
         bonusCaseOpens > 0
           ? 'Не удалось открыть — попробуй ещё раз'
@@ -98,16 +122,18 @@ export function DailyBonusView({
       ? 'Сначала подпишись на канал'
       : freeReady
         ? 'Открыть'
-        : usingBonus
+        : usingBonus && bonusReady
           ? `Открыть бонус-кейс (${bonusCaseOpens})`
-          : `Доступно через ${formatCooldown(cooldownMs)}`;
+          : usingBonus && !bonusReady
+            ? `Бонус-кейс через ${formatCooldown(bonusCooldownMs)}`
+            : `Доступно через ${formatCooldown(cooldownMs)}`;
 
   return (
     <section className={`viewEnter ${styles.wrap}`}>
       <p className={styles.lead}>
         Крути бонус дня: монеты, карта или токен книги.
         {bonusCaseOpens > 0
-          ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — можно крутить поверх кулдауна.`
+          ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — не чаще одного раз в 8 ч, пока ждёшь основной бонус.`
           : null}
       </p>
 
@@ -119,46 +145,44 @@ export function DailyBonusView({
           {STREAK_MILESTONES.map((m) => {
             const claimed = claimedStreakMilestones.includes(m);
             const reached = dailyStreak >= m;
-            let state = styles.chipSoon;
-            if (claimed) state = styles.chipDone;
-            else if (reached) state = styles.chipReady;
             return (
-              <span key={m} className={`${styles.chip} ${state}`}>
+              <span
+                key={m}
+                className={
+                  claimed
+                    ? styles.chipDone
+                    : reached
+                      ? styles.chipReady
+                      : styles.chipSoon
+                }
+              >
                 {m}д · +{STREAK_REWARDS[m]} кейс
               </span>
             );
           })}
         </div>
-        <p className={styles.streakHint}>
-          Не пропускай дни — вехи 3 / 7 / 14 / 30 дают бонус-кейсы.
-        </p>
       </div>
 
-      {usingBonus ? (
-        <p className={styles.bonusBadge}>
-          Бонус-кейс · осталось {bonusCaseOpens}
-        </p>
+      {needsChannel ? (
+        <ChannelGate
+          channelConfirmed={channelConfirmed}
+          initData={initData}
+          onOpenChannel={() => onOpenChannel(getChannelUrl())}
+          onSyncSubscription={onSyncSubscription}
+        />
       ) : null}
 
-      <CaseStrip items={strip} spinning={spinning} onSpinEnd={handleSpinEnd} />
+      <CaseStrip
+        items={strip}
+        spinning={spinning}
+        onSpinEnd={spinning ? handleSpinEnd : undefined}
+      />
 
       <Button fullWidth disabled={!available} onClick={handleOpen}>
         {buttonLabel}
       </Button>
 
-      {channelRequired ? (
-        <ChannelGate
-          channelConfirmed={channelConfirmed}
-          initData={initData}
-          onOpenChannel={() => onOpenChannel(getChannelUrl())}
-          onSyncSubscription={(subscribed) => {
-            onSyncSubscription(subscribed);
-            if (subscribed) setMessage(null);
-          }}
-        />
-      ) : null}
-
-      {message && <p className="goldMessage">{message}</p>}
+      {message ? <p className="goldMessage">{message}</p> : null}
     </section>
   );
 }

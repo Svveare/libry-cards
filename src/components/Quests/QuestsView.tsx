@@ -1,42 +1,83 @@
-import { QUESTS, type QuestId } from '../../utils/quests';
+import { useEffect, useState } from 'react';
+import {
+  QUESTS,
+  middayHuntCopy,
+  middayHuntKindForDay,
+  type QuestId,
+} from '../../utils/quests';
+import { middayUnlockRemainingMs } from '../../utils/dayStats';
+import type { DayStats } from '../../types';
+import { formatCooldown } from '../../utils/cooldown';
 import { formatGrantReward } from '../../utils/grantReward';
-import { BP_XP } from '../../data/battlePass';
 import { Button } from '../ui/Button';
 import { SurfaceListItem } from '../ui/SurfaceListItem';
 
 interface QuestsViewProps {
+  dayStats: DayStats;
   isComplete: (id: QuestId) => boolean;
   isClaimed: (id: QuestId) => boolean;
   onClaim: (id: QuestId) => boolean;
 }
 
-export function QuestsView({ isComplete, isClaimed, onClaim }: QuestsViewProps) {
+export function QuestsView({
+  dayStats,
+  isComplete,
+  isClaimed,
+  onClaim,
+}: QuestsViewProps) {
+  const hunt = middayHuntCopy(middayHuntKindForDay(dayStats.day));
+  const [unlockLeft, setUnlockLeft] = useState(() =>
+    middayUnlockRemainingMs(dayStats),
+  );
+
+  useEffect(() => {
+    const tick = () => setUnlockLeft(middayUnlockRemainingMs(dayStats));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [dayStats]);
+
+  const huntUnlocked = unlockLeft <= 0 && Boolean(dayStats.firstActiveAt);
+
   return (
     <section className="viewEnter">
       <p className="mutedCopy" style={{ marginBottom: 18, textAlign: 'center' }}>
-        Выполни дела и забери награду — так качается сезон (+{BP_XP.quest} XP
-        за каждое).
+        Выполни дела и забери награду — так качается сезон. Сложные квесты дают
+        больше XP.
       </p>
       <div className="listStack">
         {QUESTS.map((quest) => {
-          const complete = isComplete(quest.id);
+          const isHunt = quest.id === 'midday_hunt';
+          const title = isHunt ? hunt.title : quest.title;
+          const description = isHunt ? hunt.description : quest.description;
+          const locked = isHunt && !huntUnlocked;
+          const complete = !locked && isComplete(quest.id);
           const claimed = isClaimed(quest.id);
+
           let status = 'Не выполнено';
-          if (claimed) status = 'Получено';
+          if (locked) {
+            status = dayStats.firstActiveAt
+              ? `Откроется через ${formatCooldown(unlockLeft)}`
+              : 'Сыграй сегодня — охота откроется через 5 ч';
+          } else if (claimed) status = 'Получено';
           else if (complete) status = 'Готово к получению';
 
           return (
             <SurfaceListItem
               key={quest.id}
-              title={quest.title}
-              description={quest.description}
+              title={title}
+              description={description}
               meta={
                 <div>
                   <p
                     style={{
                       margin: 0,
                       fontSize: 12,
-                      color: claimed ? 'var(--gold)' : 'var(--text-muted)',
+                      color: claimed
+                        ? 'var(--gold)'
+                        : locked
+                          ? 'var(--text-soft)'
+                          : 'var(--text-muted)',
                     }}
                   >
                     {status}
@@ -49,16 +90,16 @@ export function QuestsView({ isComplete, isClaimed, onClaim }: QuestsViewProps) 
                       color: 'var(--gold)',
                     }}
                   >
-                    {formatGrantReward(quest.reward)} · +{BP_XP.quest} XP
+                    {formatGrantReward(quest.reward)} · +{quest.xp} XP
                   </p>
                 </div>
               }
               action={
                 <Button
-                  disabled={!complete || claimed}
+                  disabled={locked || !complete || claimed}
                   onClick={() => onClaim(quest.id)}
                 >
-                  {claimed ? 'Забрано' : 'Забрать'}
+                  {claimed ? 'Забрано' : locked ? 'Жди' : 'Забрать'}
                 </Button>
               }
             />

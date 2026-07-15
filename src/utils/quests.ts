@@ -2,18 +2,79 @@ import type { GrantReward } from '../types';
 
 export type QuestId =
   | 'open_daily'
-  | 'visit_library'
+  | 'new_card'
+  | 'pull_epic'
+  | 'ink_buy'
   | 'open_chest'
-  | 'spend_shop'
-  | 'open_paid_case'
-  | 'ink_today'
-  | 'claim_pass_or_ach';
+  | 'risk_case'
+  | 'midday_hunt';
+
+export type MiddayHuntKind =
+  | 'bonus_spin'
+  | 'rare_or_better'
+  | 'ink_missing'
+  | 'money_hit_25'
+  | 'hot_or_pack';
 
 export interface QuestDef {
   id: QuestId;
   title: string;
   description: string;
   reward: GrantReward;
+  /** Battle Pass XP on claim. */
+  xp: number;
+}
+
+const MIDDAY_KINDS: MiddayHuntKind[] = [
+  'bonus_spin',
+  'rare_or_better',
+  'ink_missing',
+  'money_hit_25',
+  'hot_or_pack',
+];
+
+export function utcDayKey(date = new Date()): string {
+  return date.toISOString().slice(0, 10);
+}
+
+export function middayHuntKindForDay(day = utcDayKey()): MiddayHuntKind {
+  let h = 0;
+  for (let i = 0; i < day.length; i++) h = (h * 31 + day.charCodeAt(i)) | 0;
+  return MIDDAY_KINDS[Math.abs(h) % MIDDAY_KINDS.length]!;
+}
+
+export function middayHuntCopy(kind: MiddayHuntKind): {
+  title: string;
+  description: string;
+} {
+  switch (kind) {
+    case 'bonus_spin':
+      return {
+        title: 'Охота: бонус-кейс',
+        description: 'После разблокировки открой бонусный кейс',
+      };
+    case 'rare_or_better':
+      return {
+        title: 'Охота: редкость',
+        description: 'После разблокировки выбей редкую карту или выше',
+      };
+    case 'ink_missing':
+      return {
+        title: 'Охота: чернила',
+        description: 'После разблокировки купи недостающую карту за чернила',
+      };
+    case 'money_hit_25':
+      return {
+        title: 'Охота: +25',
+        description: 'После разблокировки выбей монеты ≥25 в бонусе дня',
+      };
+    case 'hot_or_pack':
+      return {
+        title: 'Охота: Hot / пак',
+        description:
+          'После разблокировки открой Hot или пак эпик/легенда',
+      };
+  }
 }
 
 export const QUESTS: QuestDef[] = [
@@ -21,49 +82,52 @@ export const QUESTS: QuestDef[] = [
     id: 'open_daily',
     title: 'Бонус дня',
     description: 'Открой ежедневный бонус',
-    reward: { kind: 'coins', amount: 12 },
+    reward: { kind: 'coins', amount: 10 },
+    xp: 35,
   },
   {
-    id: 'visit_library',
-    title: 'В библиотеку',
-    description: 'Открой экран библиотеки',
-    reward: { kind: 'coins', amount: 8 },
+    id: 'new_card',
+    title: 'Новая карта',
+    description: 'Получи карту, которой ещё не было в коллекции',
+    reward: { kind: 'ink', amount: 3 },
+    xp: 35,
+  },
+  {
+    id: 'pull_epic',
+    title: 'Эпик или выше',
+    description: 'Выбей эпическую или легендарную из крутки / сундука',
+    reward: { kind: 'ink', amount: 2 },
+    xp: 50,
+  },
+  {
+    id: 'ink_buy',
+    title: 'Чёрнильный зал',
+    description: 'Купи карту в магазине чернил',
+    reward: { kind: 'ink', amount: 4 },
+    xp: 35,
   },
   {
     id: 'open_chest',
     title: 'Сундук',
     description: 'Открой бесплатный сундук или Сундук+',
     reward: { kind: 'ink', amount: 3 },
+    xp: 35,
   },
   {
-    id: 'spend_shop',
-    title: 'В магазине',
-    description: 'Потрать монеты на покупку',
-    reward: { kind: 'coins', amount: 15 },
+    id: 'risk_case',
+    title: 'Риск-рулетка',
+    description: 'Открой платный кейс Mid или Hot',
+    reward: { kind: 'ink', amount: 5 },
+    xp: 50,
   },
   {
-    id: 'open_paid_case',
-    title: 'Рулетка',
-    description: 'Открой платный кейс Soft / Mid / Hot',
+    id: 'midday_hunt',
+    title: 'Дневная охота',
+    description: 'Откроется через 5 ч после первой игры за день',
     reward: { kind: 'coins', amount: 18 },
-  },
-  {
-    id: 'ink_today',
-    title: 'Чернила дня',
-    description: 'Заработай чернила или купи карту за них',
-    reward: { kind: 'ink', amount: 4 },
-  },
-  {
-    id: 'claim_pass_or_ach',
-    title: 'Прогресс',
-    description: 'Забери награду сезона или ачивку',
-    reward: { kind: 'coins', amount: 20 },
+    xp: 50,
   },
 ];
-
-export function utcDayKey(date = new Date()): string {
-  return date.toISOString().slice(0, 10);
-}
 
 export function questClaimKey(questId: QuestId, day = utcDayKey()): string {
   return `${day}:${questId}`;

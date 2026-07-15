@@ -1,12 +1,13 @@
 /**
- * Invite deep link for Bothost bot (/start ref_…).
- * Bot registers the referral and shows the Web App button.
+ * Invite deep link — startapp carries ref into WebApp start_param as backup
+ * when /start pending → bootstrap fails.
  */
 export function buildReferralLink(
   botUsername: string,
   userId: string,
-  _shortName?: string | null,
+  shortName?: string | null,
 ): string {
   const bot = botUsername.replace(/^@/, '').trim() || 'librycards_bot';
-  return `https://t.me/${bot}?start=ref_${userId}`;
+  const app = (shortName ?? '').trim() || 'app';
+  return `https://t.me/${bot}/${app}?startapp=ref_${userId}`;
 }

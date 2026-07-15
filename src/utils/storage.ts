@@ -29,8 +29,10 @@ function defaultProgress(): UserProgress {
     inkShopCardIds: [],
     inkShopRolledAt: null,
     bonusCaseOpens: 0,
+    lastBonusCaseOpenAt: null,
     claimedQuestIds: [],
     claimedAchievementIds: [],
+    appliedClaimIds: [],
     visitedLibraryAt: null,
     lifetimeDailyOpens: 0,
     lifetimeChestOpens: 0,
@@ -88,6 +90,22 @@ function parseDayStats(raw: unknown): DayStats {
     achievementClaims:
       typeof d.achievementClaims === 'number' ? d.achievementClaims : 0,
     chestOpens: typeof d.chestOpens === 'number' ? d.chestOpens : 0,
+    firstActiveAt:
+      typeof d.firstActiveAt === 'string' ? d.firstActiveAt : null,
+    newCards: typeof d.newCards === 'number' ? d.newCards : 0,
+    epicPlus: typeof d.epicPlus === 'number' ? d.epicPlus : 0,
+    rarePlus: typeof d.rarePlus === 'number' ? d.rarePlus : 0,
+    bonusCaseOpens: typeof d.bonusCaseOpens === 'number' ? d.bonusCaseOpens : 0,
+    moneyHitMax: typeof d.moneyHitMax === 'number' ? d.moneyHitMax : 0,
+    riskCases: typeof d.riskCases === 'number' ? d.riskCases : 0,
+    middayBonusOpens:
+      typeof d.middayBonusOpens === 'number' ? d.middayBonusOpens : 0,
+    middayRarePlus: typeof d.middayRarePlus === 'number' ? d.middayRarePlus : 0,
+    middayInkBuys: typeof d.middayInkBuys === 'number' ? d.middayInkBuys : 0,
+    middayMoneyHit25:
+      typeof d.middayMoneyHit25 === 'number' ? d.middayMoneyHit25 : 0,
+    middayHotOrPack:
+      typeof d.middayHotOrPack === 'number' ? d.middayHotOrPack : 0,
   };
 }
 
@@ -153,11 +171,15 @@ export function normalizeProgress(
     inkShopRolledAt: parsed.inkShopRolledAt ?? null,
     bonusCaseOpens:
       typeof parsed.bonusCaseOpens === 'number' ? parsed.bonusCaseOpens : 0,
+    lastBonusCaseOpenAt: parsed.lastBonusCaseOpenAt ?? null,
     claimedQuestIds: Array.isArray(parsed.claimedQuestIds)
       ? parsed.claimedQuestIds
       : [],
     claimedAchievementIds: Array.isArray(parsed.claimedAchievementIds)
       ? sanitizeClaimed(parsed.claimedAchievementIds)
+      : [],
+    appliedClaimIds: Array.isArray(parsed.appliedClaimIds)
+      ? parsed.appliedClaimIds.filter((id): id is string => typeof id === 'string')
       : [],
     visitedLibraryAt: parsed.visitedLibraryAt ?? null,
     lifetimeDailyOpens:

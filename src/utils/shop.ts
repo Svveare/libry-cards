@@ -1,4 +1,4 @@
-import type { Card, DailyReward, Rarity } from '../types';
+import type { Card, CaseTier, DailyReward, Rarity } from '../types';
 import { getPermanentCards, getShelfById } from '../content/loader';
 
 const RARITY_ORDER: Rarity[] = [
@@ -50,7 +50,7 @@ export function pickUncollectedFromShelf(
 
 export type ShopBuyResult =
   | { status: 'ok'; reward?: DailyReward; message?: string }
-  | { status: 'case'; reward: DailyReward; price: number }
+  | { status: 'case'; reward: DailyReward; price: number; tier: CaseTier }
   | { status: 'chest_plus' }
   | { status: 'broke' }
   | { status: 'unknown' }

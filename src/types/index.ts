@@ -177,6 +177,21 @@ export interface DayStats {
   passClaims: number;
   achievementClaims: number;
   chestOpens: number;
+  /** First meaningful action ISO for midday unlock. */
+  firstActiveAt: string | null;
+  newCards: number;
+  epicPlus: number;
+  rarePlus: number;
+  bonusCaseOpens: number;
+  moneyHitMax: number;
+  /** Mid/Hot paid cases today. */
+  riskCases: number;
+  /** Actions after midday unlock. */
+  middayBonusOpens: number;
+  middayRarePlus: number;
+  middayInkBuys: number;
+  middayMoneyHit25: number;
+  middayHotOrPack: number;
 }
 
 export interface BattlePassProgress {
@@ -198,8 +213,12 @@ export interface UserProgress {
   inkShopCardIds: string[];
   inkShopRolledAt: string | null;
   bonusCaseOpens: number;
+  /** ISO of last bonus-case open (8h pacing). */
+  lastBonusCaseOpenAt: string | null;
   claimedQuestIds: string[];
   claimedAchievementIds: string[];
+  /** Server bootstrap claim ids already applied locally (anti double-credit). */
+  appliedClaimIds: string[];
   visitedLibraryAt: string | null;
   lifetimeDailyOpens: number;
   lifetimeChestOpens: number;
