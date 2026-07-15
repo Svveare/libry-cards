@@ -65,6 +65,7 @@ def default_store() -> dict[str, Any]:
         "open_claims": {},
         "card_overrides": {},
         "progress": {},
+        "users": {},
     }
 
 
@@ -82,6 +83,7 @@ def load_store() -> dict[str, Any]:
     base.setdefault("card_overrides", {})
     base.setdefault("progress", {})
     base.setdefault("open_claims", {})
+    base.setdefault("users", {})
     # Full player progress wipe when schema bumps (keeps card_overrides / referrals).
     if base.get("version") != STORE_SCHEMA:
         base["version"] = STORE_SCHEMA
@@ -158,17 +160,39 @@ def public_base_from(request: web.Request) -> str:
     return f"{proto}://{host}".rstrip("/")
 
 
-def webapp_keyboard() -> InlineKeyboardMarkup:
+def webapp_keyboard(play_label: bool = False) -> InlineKeyboardMarkup:
+    label = "Начать играть" if play_label else "Открыть Libry Cards"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Открыть Libry Cards",
+                    text=label,
                     web_app=WebAppInfo(url=WEBAPP_URL),
                 )
             ]
         ]
     )
+
+
+def touch_user(user_id: str) -> None:
+    if not user_id or not user_id.isdigit():
+        return
+    users = STORE.setdefault("users", {})
+    users[user_id] = {"seenAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
+
+def known_user_ids() -> list[str]:
+    ids: set[str] = set()
+    for key in ("users", "progress", "pending", "referrals", "referral_counts"):
+        bucket = STORE.get(key) or {}
+        if isinstance(bucket, dict):
+            ids.update(str(k) for k in bucket.keys() if str(k).isdigit())
+    for claim in (STORE.get("open_claims") or {}).values():
+        if isinstance(claim, dict):
+            uid = str(claim.get("userId") or "")
+            if uid.isdigit():
+                ids.add(uid)
+    return sorted(ids)
 
 
 bot = Bot(BOT_TOKEN)
@@ -179,6 +203,8 @@ dp = Dispatcher()
 async def cmd_start(message: Message, command: CommandObject) -> None:
     args = (command.args or "").strip()
     user_id = str(message.from_user.id) if message.from_user else ""
+    touch_user(user_id)
+    save_store(STORE)
     text = (
         "Libry Cards — библиотека карточек.\n"
         "Жми кнопку ниже, чтобы открыть игру."
@@ -248,6 +274,7 @@ async def api_bootstrap(request: web.Request) -> web.Response:
 
     user = parsed["user"]
     user_id = str(user.get("id", ""))
+    touch_user(user_id)
     start_param = body.get("startParam") or parsed.get("start_param") or ""
 
     if isinstance(start_param, str) and start_param.startswith("ref_"):
@@ -291,6 +318,8 @@ async def api_bootstrap(request: web.Request) -> web.Response:
             }
         p["coins"] = 0
         p["bonusCases"] = 0
+        save_store(STORE)
+    else:
         save_store(STORE)
 
     count = int(STORE["referral_counts"].get(user_id, 0))
@@ -376,6 +405,44 @@ async def api_admin_grant(request: web.Request) -> web.Response:
             "targetUserId": target,
             "pendingCoins": p["coins"],
             "pendingBonusCases": p["bonusCases"],
+        }
+    )
+
+
+async def api_admin_broadcast(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return web.json_response({"error": "invalid json"}, status=400)
+    parsed = validate_init_data(body.get("initData") or "")
+    if not parsed:
+        return web.json_response({"error": "unauthorized"}, status=401)
+    admin_id = str(parsed["user"].get("id", ""))
+    if admin_id not in ADMIN_IDS:
+        return web.json_response({"error": "forbidden"}, status=403)
+
+    text = str(body.get("text") or "").strip()
+    if not text or len(text) > 3500:
+        return web.json_response({"error": "bad text"}, status=400)
+
+    targets = known_user_ids()
+    kb = webapp_keyboard(play_label=True)
+    sent = 0
+    failed = 0
+    for uid in targets:
+        try:
+            await bot.send_message(chat_id=int(uid), text=text, reply_markup=kb)
+            sent += 1
+        except Exception:
+            failed += 1
+        await asyncio.sleep(0.04)  # ~25 msg/s
+
+    return web.json_response(
+        {
+            "ok": True,
+            "sent": sent,
+            "failed": failed,
+            "total": len(targets),
         }
     )
 
@@ -533,6 +600,7 @@ def create_app() -> web.Application:
     app.router.add_post("/api/claim", api_claim)
     app.router.add_post("/api/progress", api_progress)
     app.router.add_post("/api/admin/grant", api_admin_grant)
+    app.router.add_post("/api/admin/broadcast", api_admin_broadcast)
     app.router.add_post("/api/admin/card", api_admin_card)
     app.router.add_route("OPTIONS", "/api/{tail:.*}", api_health)
     app.on_startup.append(on_startup)
