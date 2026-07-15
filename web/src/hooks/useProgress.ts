@@ -33,6 +33,7 @@ import {
   type InkCatalogItemId,
 } from '../utils/ink';
 import { needsInkShopRefresh, rollInkShopOffers } from '../utils/inkShop';
+import { canBuySecretPage } from '../utils/secretPageOffers';
 import {
   ACHIEVEMENTS,
   isAchievementComplete,
@@ -41,16 +42,17 @@ import {
 } from '../utils/achievements';
 import { applyGrant, maybeGrantFullBookPage, normalizeGrantOption } from '../utils/grantReward';
 import {
-  isPagesShopAction,
-  PAGES_CATALOG,
-  type PagesCatalogItemId,
-} from '../utils/pagesShop';
-import {
   bumpDayStats,
   isAfterMiddayUnlock,
   touchFirstActive,
   withCurrentDayStats,
 } from '../utils/dayStats';
+import { isPagesShopAction } from '../utils/pagesShop';
+import {
+  addBattlePassXp,
+  ensureBattlePass,
+  trackInkFromReward,
+} from '../utils/passXp';
 import { trackRewardOutcome } from '../utils/playTrack';
 import { tickDailyStreak } from '../utils/streak';
 import {
@@ -59,11 +61,8 @@ import {
   BATTLE_PASS_PREMIUM_PRICE,
   PASS_BONUS_PAGE_PREMIUM_LEVELS,
   battlePassLevel,
-  currentBattlePassSeasonId,
-  defaultBattlePassProgress,
   type PassTrack,
 } from '../data/battlePass';
-import { addBattlePassXp } from '../utils/passXp';
 
 export type DailyPreviewResult =
   | { status: 'ok'; reward: DailyReward }
@@ -99,22 +98,6 @@ function applyReward(prev: UserProgress, reward: DailyReward): UserProgress {
   return next;
 }
 
-function ensureBattlePass(progress: UserProgress): UserProgress {
-  if (progress.battlePass?.seasonId === currentBattlePassSeasonId()) {
-    return progress;
-  }
-  return { ...progress, battlePass: defaultBattlePassProgress() };
-}
-
-function trackInkFromReward(
-  before: UserProgress,
-  after: UserProgress,
-): UserProgress {
-  const gained = after.lifetimeInkEarned - before.lifetimeInkEarned;
-  if (gained <= 0) return after;
-  return bumpDayStats(after, { inkEarned: gained });
-}
-
 export function useProgress(userId: string, initData = '') {
   const [progress, setProgress] = useState<UserProgress>(() =>
     loadProgress(userId),
@@ -139,7 +122,7 @@ export function useProgress(userId: string, initData = '') {
         if (!hasBackend()) return;
         void pushProgress(data, next);
       });
-    }, 800);
+    }, 2500);
   }, []);
 
   /** After deploy wipe, push empty defaults so Bothost doesn't restore old progress. */
@@ -369,7 +352,8 @@ export function useProgress(userId: string, initData = '') {
   }, []);
 
   const isQuestClaimed = useCallback((questId: QuestId): boolean => {
-    return progressRef.current.claimedQuestIds.includes(questClaimKey(questId));
+    const prev = withCurrentDayStats(progressRef.current);
+    return prev.claimedQuestIds.includes(questClaimKey(questId));
   }, []);
 
   const claimQuest = useCallback((questId: QuestId): boolean => {
@@ -502,7 +486,10 @@ export function useProgress(userId: string, initData = '') {
         (id) => !prev.collectedCardIds.includes(id),
       );
     }
-    const offers = rollInkShopOffers(prev.collectedCardIds);
+    const offers = rollInkShopOffers(
+      prev.collectedCardIds,
+      prev.secretPageUnlockedBookIds,
+    );
     const ids = offers.map((c) => c.id);
     commit({
       ...prev,
@@ -608,62 +595,6 @@ export function useProgress(userId: string, initData = '') {
         }
         commit(next);
         return { status: 'ok', message: item.label };
-      }
-
-      return { status: 'unknown' };
-    },
-    [commit],
-  );
-
-  const buyPagesSpend = useCallback(
-    (
-      itemId: PagesCatalogItemId,
-    ):
-      | { status: 'ok'; message?: string }
-      | {
-          status: 'case';
-          reward: DailyReward;
-          price: number;
-          tier: CaseTier;
-          currency: 'pages';
-        }
-      | { status: 'broke' }
-      | { status: 'unknown' } => {
-      const item = PAGES_CATALOG.find((i) => i.id === itemId);
-      if (!item) return { status: 'unknown' };
-      const prev = progressRef.current;
-      if (prev.pages < item.price) return { status: 'broke' };
-
-      if (item.kind === 'ink') {
-        const amount = item.amount ?? 40;
-        commit({
-          ...prev,
-          pages: prev.pages - item.price,
-          ink: prev.ink + amount,
-          lifetimeInkEarned: prev.lifetimeInkEarned + amount,
-        });
-        return { status: 'ok', message: item.label };
-      }
-
-      if (item.kind === 'coins') {
-        const amount = item.amount ?? 80;
-        commit({
-          ...prev,
-          pages: prev.pages - item.price,
-          coins: prev.coins + amount,
-        });
-        return { status: 'ok', message: item.label };
-      }
-
-      if (item.kind === 'case' && item.tier) {
-        const reward = rollPaidCaseReward(prev.collectedCardIds, item.tier);
-        return {
-          status: 'case',
-          reward,
-          price: item.price,
-          tier: item.tier,
-          currency: 'pages',
-        };
       }
 
       return { status: 'unknown' };
@@ -813,7 +744,11 @@ export function useProgress(userId: string, initData = '') {
 
         if (action === 'pages_soft' || action === 'pages_mid') {
           const tier = action === 'pages_soft' ? 'soft' : 'mid';
-          const reward = rollPaidCaseReward(prev.collectedCardIds, tier);
+          const reward = rollPaidCaseReward(
+            prev.collectedCardIds,
+            tier,
+            prev.secretPageUnlockedBookIds,
+          );
           return {
             status: 'case',
             reward,
@@ -832,7 +767,11 @@ export function useProgress(userId: string, initData = '') {
         action === 'case_hot'
       ) {
         const tier = action.replace('case_', '') as CaseTier;
-        const reward = rollPaidCaseReward(prev.collectedCardIds, tier);
+        const reward = rollPaidCaseReward(
+          prev.collectedCardIds,
+          tier,
+          prev.secretPageUnlockedBookIds,
+        );
         return { status: 'case', reward, price: item.price, tier };
       }
 
@@ -897,6 +836,31 @@ export function useProgress(userId: string, initData = '') {
     [commit],
   );
 
+  const buySecretPage = useCallback(
+    (
+      bookId: string,
+    ):
+      | { status: 'ok'; message: string }
+      | { status: 'broke' }
+      | { status: 'locked' }
+      | { status: 'owned' }
+      | { status: 'unknown' } => {
+      const prev = progressRef.current;
+      const check = canBuySecretPage(bookId, prev);
+      if (check !== 'ok') return { status: check };
+      commit({
+        ...prev,
+        pages: prev.pages - 1,
+        secretPageUnlockedBookIds: [
+          ...prev.secretPageUnlockedBookIds,
+          bookId,
+        ],
+      });
+      return { status: 'ok', message: 'Секретная страница открыта' };
+    },
+    [commit],
+  );
+
   return {
     progress,
     previewDailyOpen,
@@ -912,10 +876,10 @@ export function useProgress(userId: string, initData = '') {
     claimQuest,
     claimAchievement,
     buyShopItem,
+    buySecretPage,
     ensureInkShop,
     buyInkCard,
     buyInkSpend,
-    buyPagesSpend,
     applyReferralParam,
     applyServerBootstrap,
     replaceFromServer,

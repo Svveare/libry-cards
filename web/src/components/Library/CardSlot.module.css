@@ -154,10 +154,43 @@
     0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
+.secret {
+  background: #08090b;
+  border-color: color-mix(in srgb, #d0d6e0 70%, var(--card-rarity));
+  box-shadow:
+    0 0 0 1px rgba(200, 210, 220, 0.28),
+    0 0 32px color-mix(in srgb, #b8c0cc 35%, transparent),
+    var(--shadow-card);
+}
+
+.secret::after {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(230, 236, 245, 0.35) 48%,
+    transparent 62%
+  );
+  opacity: 0.85;
+  animation: secretSheen 2.2s ease-in-out 1 forwards;
+}
+
+@keyframes secretSheen {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(130%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card,
   .cardInteractive:hover {
     transition: none;
     transform: none;
+  }
+
+  .secret::after {
+    animation: none;
   }
 }

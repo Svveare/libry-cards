@@ -107,7 +107,7 @@
 
 .featured {
   margin-bottom: 12px;
-  padding: 24px 16px 24px 14px;
+  padding: 26px 16px 26px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
   background:
@@ -118,9 +118,9 @@
 }
 
 .featured .icon {
-  width: 54px;
-  height: 54px;
-  font-size: 22px;
+  width: 70px;
+  height: 70px;
+  font-size: 30px;
   background: linear-gradient(145deg, var(--gold-bright), var(--gold-dim));
   color: var(--bg-deep);
   border: none;

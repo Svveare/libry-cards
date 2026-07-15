@@ -4,6 +4,8 @@ import {
   getStandById,
   getBookProgress,
   getShelfProgress,
+  isBookBaseComplete,
+  isBookFullyComplete,
 } from '../../content/loader';
 import { RARITY_COLORS } from '../../types';
 import { Header } from '../ui/Header';
@@ -12,6 +14,7 @@ import styles from './ShelfView.module.css';
 interface StandDetailViewProps {
   standId: string;
   collectedSet: Set<string>;
+  unlockedSecretBookIds?: string[];
   onBack: () => void;
   onShelfSelect: (shelfId: string) => void;
 }
@@ -19,6 +22,7 @@ interface StandDetailViewProps {
 export function StandDetailView({
   standId,
   collectedSet,
+  unlockedSecretBookIds = [],
   onBack,
   onShelfSelect,
 }: StandDetailViewProps) {
@@ -33,7 +37,11 @@ export function StandDetailView({
       ) : (
         <div className={styles.list}>
           {stand.shelves.map((shelf) => {
-            const { collected, total } = getShelfProgress(shelf, collectedSet);
+            const { collected, total } = getShelfProgress(
+              shelf,
+              collectedSet,
+              unlockedSecretBookIds,
+            );
             return (
               <button
                 key={shelf.id}
@@ -57,6 +65,7 @@ export function StandDetailView({
 interface ShelfViewProps {
   shelfId: string;
   collectedSet: Set<string>;
+  unlockedSecretBookIds?: string[];
   onBack: () => void;
   onBookSelect: (bookId: string) => void;
 }
@@ -64,12 +73,14 @@ interface ShelfViewProps {
 export function ShelfView({
   shelfId,
   collectedSet,
+  unlockedSecretBookIds = [],
   onBack,
   onBookSelect,
 }: ShelfViewProps) {
   const shelf = getShelfById(shelfId);
   if (!shelf) return null;
   const stand = getStandById(shelf.standId);
+  const unlockedSet = new Set(unlockedSecretBookIds);
 
   return (
     <section className="viewEnter">
@@ -80,13 +91,36 @@ export function ShelfView({
         <div className={styles.board}>
           <div className={styles.books}>
             {shelf.books.map((book) => {
-              const { collected, total } = getBookProgress(book, collectedSet);
+              const { collected, total } = getBookProgress(
+                book,
+                collectedSet,
+                unlockedSet,
+              );
               const color = RARITY_COLORS[book.rarity];
+              const fullySecret = isBookFullyComplete(
+                book,
+                collectedSet,
+                unlockedSet,
+              );
+              const secretUnlocked =
+                !fullySecret && unlockedSet.has(book.id);
+              const baseDone =
+                !fullySecret &&
+                !secretUnlocked &&
+                isBookBaseComplete(book, collectedSet);
+              const spineClass = [
+                styles.spine,
+                fullySecret ? styles.spineSecretComplete : '',
+                secretUnlocked ? styles.spineSecretUnlocked : '',
+                baseDone ? styles.spineBaseComplete : '',
+              ]
+                .filter(Boolean)
+                .join(' ');
               return (
                 <button
                   key={book.id}
                   type="button"
-                  className={styles.spine}
+                  className={spineClass}
                   style={{ '--spine-color': color } as CSSProperties}
                   onClick={() => onBookSelect(book.id)}
                 >

@@ -8,7 +8,9 @@ import { HomeMenu } from './components/Home/HomeMenu';
 import { Header } from './components/ui/Header';
 import { checkChannelSubscription } from './utils/checkSubscription';
 import { canOpenChest } from './utils/chestOpen';
+import { getSecretPageOffers } from './utils/secretPageOffers';
 import { wasProgressWipedThisSession } from './utils/storage';
+import { withCurrentDayStats } from './utils/dayStats';
 import { useTelegram } from './hooks/useTelegram';
 import { useProgress } from './hooks/useProgress';
 
@@ -94,7 +96,6 @@ function ScreenFallback() {
 function screenNeedsContent(screen: Screen): boolean {
   return (
     screen.name === 'daily' ||
-    screen.name === 'pass' ||
     screen.name === 'chest' ||
     screen.name === 'library' ||
     screen.name === 'stand' ||
@@ -135,6 +136,7 @@ function App() {
     claimQuest,
     claimAchievement,
     buyShopItem,
+    buySecretPage,
     ensureInkShop,
     buyInkCard,
     buyInkSpend,
@@ -148,9 +150,17 @@ function App() {
   const [revealedReward, setRevealedReward] = useState<DailyReward | null>(
     null,
   );
+  const [shopToast, setShopToast] = useState<string | null>(null);
   const [contentReady, setContentReady] = useState(isContentReady);
   const [contentEpoch, setContentEpoch] = useState(0);
-  const admin = isAdminUser(userId);
+  const [serverAdmin, setServerAdmin] = useState<boolean | null>(null);
+  const admin = serverAdmin ?? isAdminUser(userId);
+
+  useEffect(() => {
+    if (!shopToast) return;
+    const t = window.setTimeout(() => setShopToast(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [shopToast]);
 
   useEffect(() => {
     if (contentReady) return;
@@ -204,6 +214,7 @@ function App() {
         if (boot.progress && !wasProgressWipedThisSession()) {
           replaceFromServer(boot.progress);
         }
+        setServerAdmin(boot.isAdmin);
         applyServerBootstrap({
           referralCount: boot.referralCount,
           pendingCoins: boot.pendingCoins,
@@ -250,6 +261,11 @@ function App() {
   const collectedSet = useMemo(
     () => new Set(progress.collectedCardIds),
     [progress.collectedCardIds],
+  );
+
+  const questDayStats = useMemo(
+    () => withCurrentDayStats(progress).dayStats,
+    [progress],
   );
 
   const goHome = () => setScreen({ name: 'home' });
@@ -349,6 +365,7 @@ function App() {
             <ChestView
               lastChestOpenAt={progress.lastChestOpenAt}
               collectedIds={progress.collectedCardIds}
+              unlockedSecretBookIds={progress.secretPageUnlockedBookIds}
               variant={variant}
               channelConfirmed={Boolean(progress.channelConfirmedAt)}
               onStart={startChest}
@@ -372,6 +389,7 @@ function App() {
             />
             <StandsView
               collectedSet={collectedSet}
+              unlockedSecretBookIds={progress.secretPageUnlockedBookIds}
               onStandSelect={(standId) => setScreen({ name: 'stand', standId })}
               hideTitle
             />
@@ -382,6 +400,7 @@ function App() {
           <StandDetailView
             standId={screen.standId}
             collectedSet={collectedSet}
+            unlockedSecretBookIds={progress.secretPageUnlockedBookIds}
             onBack={() => setScreen({ name: 'library' })}
             onShelfSelect={(shelfId) =>
               setScreen({ name: 'shelf', standId: screen.standId, shelfId })
@@ -393,6 +412,7 @@ function App() {
           <ShelfView
             shelfId={screen.shelfId}
             collectedSet={collectedSet}
+            unlockedSecretBookIds={progress.secretPageUnlockedBookIds}
             onBack={() =>
               setScreen({ name: 'stand', standId: screen.standId })
             }
@@ -411,6 +431,7 @@ function App() {
           <BookView
             bookId={screen.bookId}
             collectedSet={collectedSet}
+            unlockedSecretBookIds={progress.secretPageUnlockedBookIds}
             onBack={() =>
               setScreen({
                 name: 'shelf',
@@ -429,7 +450,7 @@ function App() {
               onBack={goHome}
             />
             <QuestsView
-              dayStats={progress.dayStats}
+              dayStats={questDayStats}
               isComplete={isQuestComplete}
               isClaimed={isQuestClaimed}
               onClaim={claimQuest}
@@ -495,11 +516,31 @@ function App() {
               coins={progress.coins}
               pages={progress.pages}
               ink={progress.ink}
+              secretPageOffers={
+                screen.categoryId === 'pages'
+                  ? getSecretPageOffers(progress)
+                  : []
+              }
               onOpenItem={(itemId) => setScreen({ name: 'shopItem', itemId })}
               onOpenFreeChest={() =>
                 setScreen({ name: 'chest', variant: 'free' })
               }
+              onBuySecretPage={(bookId) => {
+                const result = buySecretPage(bookId);
+                if (result.status === 'ok') {
+                  setShopToast(result.message);
+                } else if (result.status === 'broke') {
+                  setShopToast('Недостаточно страниц');
+                } else if (result.status === 'owned') {
+                  setShopToast('Уже открыто');
+                } else if (result.status === 'locked') {
+                  setShopToast('Сначала собери 20/20');
+                } else {
+                  setShopToast('Недоступно');
+                }
+              }}
             />
+            {shopToast ? <p className="goldMessage">{shopToast}</p> : null}
           </>
         );
       }

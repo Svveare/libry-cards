@@ -5,7 +5,11 @@ import type {
   DailyRewardKind,
   Rarity,
 } from '../types';
-import { config, getPermanentCards } from '../content/loader';
+import {
+  config,
+  getPermanentCards,
+  getUnlockedSecretCards,
+} from '../content/loader';
 import { pickWeighted } from './weighted';
 
 /** Weights sum to 100. No mythic; ink is not a daily slot kind. */
@@ -49,6 +53,10 @@ const CASE_WEIGHTS: Record<
     { kind: 'pages', weight: 2 },
   ],
 };
+
+/** Hot case only: chance to roll an unlocked secret card before normal weights. */
+const HOT_SECRET_CHANCE = 0.01;
+
 const RARITY_FALLBACK: Rarity[] = ['legendary', 'epic', 'rare', 'common'];
 
 const MONEY_AMOUNTS = [10, 25, 50, 100] as const;
@@ -95,6 +103,23 @@ function permanentPoolNoMythic(): Card[] {
   );
 }
 
+function pickSecretCard(
+  collectedIds: string[],
+  unlockedSecretBookIds: string[],
+): Card | null {
+  const collected = new Set(collectedIds);
+  const uncollected = getUnlockedSecretCards(
+    unlockedSecretBookIds,
+    collected,
+  );
+  if (uncollected.length > 0) {
+    return uncollected[Math.floor(Math.random() * uncollected.length)] ?? null;
+  }
+  const any = getUnlockedSecretCards(unlockedSecretBookIds);
+  if (any.length === 0) return null;
+  return any[Math.floor(Math.random() * any.length)] ?? null;
+}
+
 /**
  * Roll daily reward. Mythic/Secret never drop from daily.
  */
@@ -117,11 +142,17 @@ export function rollDailyReward(collectedIds: string[]): DailyReward {
   return { kind: 'ink', amount: 2 };
 }
 
-/** Paid case tiers: no coins; empty pool → pages. */
+/** Paid case tiers: no coins; empty pool → pages. Hot can rarely drop secret. */
 export function rollPaidCaseReward(
   collectedIds: string[],
   tier: CaseTier = 'mid',
+  unlockedSecretBookIds: string[] = [],
 ): DailyReward {
+  if (tier === 'hot' && Math.random() < HOT_SECRET_CHANCE) {
+    const secret = pickSecretCard(collectedIds, unlockedSecretBookIds);
+    if (secret) return { kind: 'card', card: secret };
+  }
+
   const kind = pickWeighted(CASE_WEIGHTS[tier]);
   const pool = permanentPoolNoMythic();
   const collected = new Set(collectedIds);
@@ -165,6 +196,10 @@ function kindLabel(kind: DailyRewardKind, moneyAmount?: number): string {
       return 'Эпик';
     case 'legendary':
       return 'Легенда';
+    case 'secret':
+      return 'Секрет';
+    default:
+      return 'Карта';
   }
 }
 

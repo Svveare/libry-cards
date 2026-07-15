@@ -19,6 +19,7 @@ import styles from './ChestView.module.css';
 interface ChestViewProps {
   lastChestOpenAt: string | null;
   collectedIds: string[];
+  unlockedSecretBookIds?: string[];
   variant?: ChestVariant;
   channelConfirmed: boolean;
   onStart: (variant: ChestVariant) => boolean;
@@ -65,6 +66,7 @@ function TreasureChest({
 export function ChestView({
   lastChestOpenAt,
   collectedIds,
+  unlockedSecretBookIds = [],
   variant = 'free',
   channelConfirmed,
   onStart,
@@ -119,7 +121,7 @@ export function ChestView({
       setMessage('Сундук пока недоступен');
       return;
     }
-    setSlots(rollChestSlots(collectedIds, variant));
+    setSlots(rollChestSlots(collectedIds, variant, unlockedSecretBookIds));
     setPickedIndex(null);
     setPhase('picking');
   };

@@ -22,14 +22,14 @@ export function xpForNewCard(rarity: Rarity): number {
   return XP_FOR_NEW_CARD[rarity] ?? 10;
 }
 
-function ensureBattlePass(progress: UserProgress): UserProgress {
+export function ensureBattlePass(progress: UserProgress): UserProgress {
   if (progress.battlePass?.seasonId === currentBattlePassSeasonId()) {
     return progress;
   }
   return { ...progress, battlePass: defaultBattlePassProgress() };
 }
 
-function trackInkFromReward(
+export function trackInkFromReward(
   before: UserProgress,
   after: UserProgress,
 ): UserProgress {

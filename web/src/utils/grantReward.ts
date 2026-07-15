@@ -1,5 +1,10 @@
 import type { CardRarityRoll, GrantReward, UserProgress } from '../types';
-import { getPermanentCards, getBookProgress, getStands } from '../content/loader';
+import {
+  findBookForCardId,
+  getBookById,
+  isBookBaseComplete,
+  getPermanentCards,
+} from '../content/loader';
 
 const FALLBACK_INK: Record<CardRarityRoll, number> = {
   common: 2,
@@ -19,7 +24,7 @@ function pickUncollectedOfRarity(
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
 }
 
-/** Grant +1 page per newly completed book not yet in claimedFullBookIds. */
+/** Grant +1 page per newly base-completed book not yet in claimedFullBookIds. */
 export function maybeGrantFullBookPage(
   prev: UserProgress,
   next: UserProgress,
@@ -33,18 +38,20 @@ export function maybeGrantFullBookPage(
   const claimed = new Set(next.claimedFullBookIds);
   const newlyClaimed: string[] = [];
 
-  for (const stand of getStands()) {
-    for (const shelf of stand.shelves) {
-      for (const book of shelf.books) {
-        if (!book.enabled || claimed.has(book.id)) continue;
-        const after = getBookProgress(book, nextSet);
-        if (after.total <= 0 || after.collected < after.total) continue;
-        const before = getBookProgress(book, prevSet);
-        if (before.collected >= before.total) continue;
-        newlyClaimed.push(book.id);
-        claimed.add(book.id);
-      }
-    }
+  const newCardIds = next.collectedCardIds.filter((id) => !prevSet.has(id));
+  const booksToCheck = new Set<string>();
+  for (const cardId of newCardIds) {
+    const book = findBookForCardId(cardId);
+    if (book?.enabled) booksToCheck.add(book.id);
+  }
+
+  for (const bookId of booksToCheck) {
+    const book = getBookById(bookId);
+    if (!book || !book.enabled || claimed.has(book.id)) continue;
+    if (!isBookBaseComplete(book, nextSet)) continue;
+    if (isBookBaseComplete(book, prevSet)) continue;
+    newlyClaimed.push(book.id);
+    claimed.add(book.id);
   }
 
   if (newlyClaimed.length === 0) return next;

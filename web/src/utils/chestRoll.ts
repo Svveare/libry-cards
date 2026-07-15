@@ -1,5 +1,8 @@
 import type { Card, ChestVariant, DailyReward, Rarity } from '../types';
-import { getPermanentCards } from '../content/loader';
+import {
+  getPermanentCards,
+  getUnlockedSecretCards,
+} from '../content/loader';
 import { rollMoneyAmount } from './dailyRoll';
 import { inkForDupe } from './ink';
 import { pickWeighted } from './weighted';
@@ -15,6 +18,8 @@ const FREE_WEIGHTS: { kind: Rarity; weight: number }[] = [
 const FREE_MONEY_SLOT_CHANCE = 0.08;
 const FREE_PAGES_SLOT_CHANCE = 0.015;
 const PLUS_PAGES_SLOT_CHANCE = 0.025;
+/** Chest+ only: chance a slot rolls an unlocked secret card. */
+const PLUS_SECRET_SLOT_CHANCE = 0.02;
 
 /** Chest+: no money, stronger. */
 const PLUS_WEIGHTS: { kind: Rarity; weight: number }[] = [
@@ -67,9 +72,31 @@ function rollCardSlot(
   return { type: 'card', card, grantsCard };
 }
 
+function rollSecretSlot(
+  collected: Set<string>,
+  used: Set<string>,
+  unlockedSecretBookIds: string[],
+): ChestSlot | null {
+  const secretPool = getUnlockedSecretCards(unlockedSecretBookIds).filter(
+    (c) => !used.has(c.id),
+  );
+  if (secretPool.length === 0) return null;
+  const preferUncollected = secretPool.filter((c) => !collected.has(c.id));
+  const pool =
+    preferUncollected.length > 0 ? preferUncollected : secretPool;
+  const card = pool[Math.floor(Math.random() * pool.length)]!;
+  used.add(card.id);
+  return {
+    type: 'card',
+    card,
+    grantsCard: !collected.has(card.id),
+  };
+}
+
 export function rollChestSlots(
   collectedIds: string[],
   variant: ChestVariant = 'free',
+  unlockedSecretBookIds: string[] = [],
 ): ChestSlot[] {
   const collected = new Set(collectedIds);
   const pool = getPermanentCards().filter((c) => c.rarity !== 'secret');
@@ -90,6 +117,18 @@ export function rollChestSlots(
     if (allowMoney && Math.random() < FREE_MONEY_SLOT_CHANCE) {
       slots.push({ type: 'money', amount: rollMoneyAmount() });
       continue;
+    }
+
+    if (variant === 'plus' && Math.random() < PLUS_SECRET_SLOT_CHANCE) {
+      const secretSlot = rollSecretSlot(
+        collected,
+        used,
+        unlockedSecretBookIds,
+      );
+      if (secretSlot) {
+        slots.push(secretSlot);
+        continue;
+      }
     }
 
     const slot = rollCardSlot(collected, used, weights, pool, uncollected);

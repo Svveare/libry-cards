@@ -78,6 +78,8 @@ export interface Page {
   id: string;
   number: number;
   rarity: Rarity;
+  /** When true, page is hidden until secret page unlock for this book. */
+  secret?: boolean;
   cards: Card[];
 }
 
@@ -224,6 +226,8 @@ export interface UserProgress {
   pages: number;
   /** Book ids that already awarded a completion page. */
   claimedFullBookIds: string[];
+  /** Book ids whose secret (6th) page has been unlocked in the shop. */
+  secretPageUnlockedBookIds: string[];
   ink: number;
   inkShopCardIds: string[];
   inkShopRolledAt: string | null;
@@ -259,7 +263,8 @@ export type DailyRewardKind =
   | 'epic'
   | 'legendary'
   | 'pages'
-  | 'ink';
+  | 'ink'
+  | 'secret';
 
 export type DailyReward =
   | { kind: 'money'; amount: number }
@@ -310,6 +315,7 @@ export const REWARD_KIND_COLORS: Record<DailyRewardKind, string> = {
   legendary: 'var(--rarity-legendary)',
   pages: '#e0b878',
   ink: '#6ec8f0',
+  secret: 'var(--rarity-secret)',
 };
 
 export const STAND_TYPE_LABELS: Record<StandType, string> = {

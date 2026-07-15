@@ -256,6 +256,54 @@
                       "standId": "permanent"
                     }
                   ]
+                },
+                {
+                  "id": "ru-rap-page-6",
+                  "number": 6,
+                  "rarity": "secret",
+                  "secret": true,
+                  "cards": [
+                    {
+                      "id": "rr-secret-1",
+                      "name": "—",
+                      "description": "",
+                      "rarity": "secret",
+                      "slotIndex": 0,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-secret-2",
+                      "name": "—",
+                      "description": "",
+                      "rarity": "secret",
+                      "slotIndex": 1,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-secret-3",
+                      "name": "—",
+                      "description": "",
+                      "rarity": "secret",
+                      "slotIndex": 2,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    },
+                    {
+                      "id": "rr-secret-4",
+                      "name": "—",
+                      "description": "",
+                      "rarity": "secret",
+                      "slotIndex": 3,
+                      "bookId": "ru-rap",
+                      "shelfId": "music",
+                      "standId": "permanent"
+                    }
+                  ]
                 }
               ]
             }

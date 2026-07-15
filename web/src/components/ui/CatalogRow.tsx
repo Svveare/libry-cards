@@ -5,7 +5,8 @@ interface CatalogRowProps {
   title: string;
   description?: string;
   meta?: ReactNode;
-  accent?: 'default' | 'free' | 'premium';
+  accent?: 'default' | 'free' | 'premium' | 'secret';
+  disabled?: boolean;
   onClick: () => void;
   ctaLabel?: string;
 }
@@ -15,14 +16,17 @@ export function CatalogRow({
   description,
   meta,
   accent = 'default',
+  disabled = false,
   onClick,
   ctaLabel,
 }: CatalogRowProps) {
   return (
     <button
       type="button"
-      className={`${styles.row} ${styles[accent]}`}
+      className={`${styles.row} ${styles[accent]}${disabled ? ` ${styles.disabled}` : ''}`}
       onClick={onClick}
+      disabled={disabled}
+      aria-disabled={disabled || undefined}
     >
       <span className={styles.body}>
         <span className={styles.title}>{title}</span>

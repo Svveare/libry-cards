@@ -10,6 +10,7 @@ import type { UserProgress } from '../../types';
 import type { TelegramUser } from '../../hooks/useTelegram';
 import { Header } from '../ui/Header';
 import { Button } from '../ui/Button';
+import { ClaimMark } from '../ui/ClaimMark';
 import styles from './ProfileView.module.css';
 
 interface ProfileViewProps {
@@ -91,12 +92,17 @@ export function ProfileView({
                 <p className={styles.achDesc}>{a.description}</p>
                 <p className={styles.achReward}>{achievementRewardLabel(a)}</p>
               </div>
-              <Button
-                disabled={!done || claimed}
-                onClick={() => onClaimAchievement(a.id)}
-              >
-                {claimed ? 'Забрано' : done ? 'Забрать' : 'Ещё нет'}
-              </Button>
+              {claimed ? (
+                <ClaimMark />
+              ) : (
+                <Button
+                  variant={done ? 'primary' : 'secondary'}
+                  disabled={!done}
+                  onClick={() => onClaimAchievement(a.id)}
+                >
+                  {done ? 'Забрать' : 'Ещё нет'}
+                </Button>
+              )}
             </article>
           );
         })}

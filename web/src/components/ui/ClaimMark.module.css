@@ -1,0 +1,18 @@
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--gold-bright);
+  text-shadow: 0 0 16px rgba(255, 232, 168, 0.45);
+}
+
+.compact {
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 22px;
+}

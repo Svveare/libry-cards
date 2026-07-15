@@ -26,6 +26,7 @@ function defaultProgress(): UserProgress {
     rating: 0,
     pages: 0,
     claimedFullBookIds: [],
+    secretPageUnlockedBookIds: [],
     ink: 0,
     inkShopCardIds: [],
     inkShopRolledAt: null,
@@ -164,6 +165,11 @@ export function normalizeProgress(
           : 0,
     claimedFullBookIds: Array.isArray(parsed.claimedFullBookIds)
       ? parsed.claimedFullBookIds.filter(
+          (id): id is string => typeof id === 'string',
+        )
+      : [],
+    secretPageUnlockedBookIds: Array.isArray(parsed.secretPageUnlockedBookIds)
+      ? parsed.secretPageUnlockedBookIds.filter(
           (id): id is string => typeof id === 'string',
         )
       : [],

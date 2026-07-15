@@ -1,0 +1,23 @@
+{
+  "name": "libry-promo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render:916": "remotion render LibryPromo916 out/libry-promo-9x16.mp4",
+    "render:169": "remotion render LibryPromo169 out/libry-promo-16x9.mp4",
+    "render": "npm run render:916 && npm run render:169"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.286",
+    "@remotion/google-fonts": "^4.0.286",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.286"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.7.2"
+  }
+}

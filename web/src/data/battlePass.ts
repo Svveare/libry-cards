@@ -4,8 +4,6 @@ export const BATTLE_PASS_LEVELS = 30;
 /** Cost to unlock level 2 (level 1 is free). Each next step +10. */
 export const BATTLE_PASS_XP_BASE = 100;
 export const BATTLE_PASS_XP_STEP = 10;
-/** @deprecated flat XP — kept for old imports; prefer xpCostToReach */
-export const BATTLE_PASS_XP_PER_LEVEL = BATTLE_PASS_XP_BASE;
 /** Reachable mid-month; Pro sells cards/cases, not a coin printer. */
 export const BATTLE_PASS_PREMIUM_PRICE = 1000;
 /** XP past season cap between overflow rewards. */

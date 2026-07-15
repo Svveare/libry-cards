@@ -91,3 +91,49 @@
     linear-gradient(135deg, rgba(212, 168, 83, 0.12), transparent 50%),
     var(--surface);
 }
+
+.secret {
+  border-color: color-mix(in srgb, var(--rarity-secret) 55%, transparent);
+  background:
+    radial-gradient(
+      ellipse 90% 80% at 100% 0%,
+      color-mix(in srgb, var(--rarity-secret) 22%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(135deg, rgba(180, 196, 220, 0.1), transparent 50%),
+    linear-gradient(180deg, #1a1e24, #12151a);
+  box-shadow:
+    var(--shadow-shelf),
+    0 0 20px color-mix(in srgb, var(--rarity-secret) 18%, transparent);
+}
+
+.secret .title {
+  color: #eef2f8;
+}
+
+.secret .meta {
+  color: var(--rarity-secret);
+}
+
+.secret .cta {
+  color: #0c0e12;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--rarity-secret) 92%, #ffffff),
+    color-mix(in srgb, var(--rarity-secret) 70%, #6a7484)
+  );
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--rarity-secret) 35%, transparent);
+}
+
+.disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.disabled:active {
+  transform: none;
+}
+
+.disabled .cta {
+  opacity: 0.85;
+}

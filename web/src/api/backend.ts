@@ -59,6 +59,13 @@ async function postJson<T>(
           res.status,
         );
       }
+      if (res.status === 429) {
+        throw new ApiError(
+          'http',
+          err.error === 'rate_limit' ? 'слишком много запросов' : 'лимит запросов',
+          res.status,
+        );
+      }
       throw new ApiError(
         'http',
         err.error ?? `ошибка ${res.status}`,
@@ -148,6 +155,7 @@ export async function adminBroadcast(
   text: string,
 ): Promise<{
   ok: boolean;
+  accepted?: boolean;
   sent?: number;
   failed?: number;
   total?: number;
@@ -158,19 +166,27 @@ export async function adminBroadcast(
   try {
     const data = await postJson<{
       ok?: boolean;
+      accepted?: boolean;
       sent?: number;
       failed?: number;
       total?: number;
     }>('/api/admin/broadcast', { initData, text });
     return {
       ok: true,
-      sent: data.sent ?? 0,
-      failed: data.failed ?? 0,
+      accepted: data.accepted ?? false,
+      sent: data.sent,
+      failed: data.failed,
       total: data.total ?? 0,
     };
   } catch (e) {
     if (e instanceof ApiError) {
       if (e.code === 'unauthorized') return { ok: false, error: 'unauthorized' };
+      if (e.message === 'busy') {
+        return { ok: false, error: 'busy' };
+      }
+      if (e.message === 'cooldown' || e.status === 429) {
+        return { ok: false, error: 'cooldown' };
+      }
       return { ok: false, error: e.message };
     }
     return { ok: false, error: 'сеть' };

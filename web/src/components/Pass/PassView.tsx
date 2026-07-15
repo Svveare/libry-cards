@@ -5,6 +5,7 @@ import {
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
   BP_OVERFLOW_XP,
+  PASS_BONUS_PAGE_PREMIUM_LEVELS,
   battlePassLevel,
   currentBattlePassSeasonId,
   overflowXpBanked,
@@ -20,6 +21,7 @@ import {
   normalizeGrantOption,
 } from '../../utils/grantReward';
 import { Button } from '../ui/Button';
+import { ClaimMark } from '../ui/ClaimMark';
 import styles from './PassView.module.css';
 
 interface PassViewProps {
@@ -152,12 +154,16 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
                 <div className={styles.track}>
                   <span className={styles.trackTag}>Free</span>
                   <p className={styles.reward}>{rewardText(def.free)}</p>
-                  <Button
-                    disabled={!unlocked || freeClaimed}
-                    onClick={() => onClaim(def.level, 'free')}
-                  >
-                    {freeClaimed ? '✓' : unlocked ? 'Забрать' : '🔒'}
-                  </Button>
+                  {freeClaimed ? (
+                    <ClaimMark compact />
+                  ) : (
+                    <Button
+                      disabled={!unlocked}
+                      onClick={() => onClaim(def.level, 'free')}
+                    >
+                      {unlocked ? 'Забрать' : '🔒'}
+                    </Button>
+                  )}
                 </div>
                 <div
                   className={`${styles.track} ${bp.premium ? '' : styles.locked}`}
@@ -166,35 +172,37 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
                   <p className={styles.reward}>
                     {rewardText(def.premium)}
                     {premiumChoice &&
-                    (def.level === 15 ||
-                      def.level === 25 ||
-                      def.level === 30)
+                    PASS_BONUS_PAGE_PREMIUM_LEVELS.includes(
+                      def.level as (typeof PASS_BONUS_PAGE_PREMIUM_LEVELS)[number],
+                    )
                       ? ' · +1 страница'
                       : ''}
                   </p>
-                  <Button
-                    disabled={!bp.premium || !unlocked || premClaimed}
-                    onClick={() => {
-                      if (premiumChoice) {
-                        setChoicePick({
-                          level: def.level,
-                          options: premiumChoice.options,
-                        });
-                        return;
-                      }
-                      onClaim(def.level, 'premium');
-                    }}
-                  >
-                    {premClaimed
-                      ? '✓'
-                      : !bp.premium
+                  {premClaimed ? (
+                    <ClaimMark compact />
+                  ) : (
+                    <Button
+                      disabled={!bp.premium || !unlocked}
+                      onClick={() => {
+                        if (premiumChoice) {
+                          setChoicePick({
+                            level: def.level,
+                            options: premiumChoice.options,
+                          });
+                          return;
+                        }
+                        onClaim(def.level, 'premium');
+                      }}
+                    >
+                      {!bp.premium
                         ? 'Pro'
                         : unlocked
                           ? premiumChoice
                             ? 'Выбрать'
                             : 'Забрать'
                           : '🔒'}
-                  </Button>
+                    </Button>
+                  )}
                 </div>
               </div>
             </article>
@@ -219,8 +227,8 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
                   key={index}
                   fullWidth
                   onClick={() => {
-                    onClaim(choicePick.level, 'premium', index);
-                    setChoicePick(null);
+                    const ok = onClaim(choicePick.level, 'premium', index);
+                    if (ok) setChoicePick(null);
                   }}
                 >
                   {optionText(opt)}

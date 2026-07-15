@@ -1,5 +1,92 @@
 .bookView {
   padding-bottom: 24px;
+  position: relative;
+}
+
+.bookChrome {
+  position: relative;
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.bookAuraBase .bookChrome {
+  padding: 12px 10px 14px;
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% 0%,
+      color-mix(in srgb, var(--gold) 22%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gold) 10%, var(--surface)) 0%,
+      color-mix(in srgb, var(--bg-deep) 70%, transparent) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--gold-bright) 25%, transparent),
+    0 0 28px color-mix(in srgb, var(--gold) 35%, transparent),
+    0 0 56px color-mix(in srgb, var(--gold) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--gold-bright) 35%, transparent);
+}
+
+.bookAuraUnlocked .bookChrome {
+  padding: 12px 10px 14px;
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% 0%,
+      color-mix(in srgb, var(--rarity-secret) 30%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #1c2128 0%, #0e1014 55%, #15181e 100%);
+  border: 1px solid color-mix(in srgb, var(--rarity-secret) 70%, transparent);
+  animation: bookSilverPulse 2.6s ease-in-out infinite;
+}
+
+@keyframes bookSilverPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #ffffff 14%, transparent),
+      0 0 24px color-mix(in srgb, var(--rarity-secret) 32%, transparent),
+      0 0 48px color-mix(in srgb, var(--rarity-secret) 16%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 32%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #ffffff 22%, transparent),
+      0 0 34px color-mix(in srgb, var(--rarity-secret) 48%, transparent),
+      0 0 64px color-mix(in srgb, var(--rarity-secret) 28%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 48%, transparent);
+  }
+}
+
+.bookAuraSecret .bookChrome {
+  padding: 12px 10px 14px;
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% 0%,
+      color-mix(in srgb, var(--rarity-secret) 36%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #1a1d22 0%, #0c0d10 55%, #12151a 100%);
+  border: 1px solid color-mix(in srgb, var(--rarity-secret) 78%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ffffff 24%, transparent),
+    0 0 34px color-mix(in srgb, var(--rarity-secret) 52%, transparent),
+    0 0 68px color-mix(in srgb, var(--rarity-secret) 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 50%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bookAuraUnlocked .bookChrome {
+    animation: none;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent),
+      0 0 28px color-mix(in srgb, var(--rarity-secret) 40%, transparent),
+      0 0 56px color-mix(in srgb, var(--rarity-secret) 22%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--rarity-secret) 40%, transparent);
+  }
 }
 
 .meta {
@@ -12,6 +99,54 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-shelf);
+}
+
+.metaGlow {
+  border-color: color-mix(in srgb, var(--gold) 75%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--gold) 12%, var(--surface)),
+    var(--surface)
+  );
+  box-shadow:
+    var(--shadow-shelf),
+    0 0 0 1px color-mix(in srgb, var(--gold-bright) 20%, transparent),
+    0 0 24px color-mix(in srgb, var(--gold) 40%, transparent),
+    0 0 40px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+.metaUnlocked {
+  background: linear-gradient(90deg, #181c22, #2c323c);
+  border-color: color-mix(in srgb, var(--rarity-secret) 72%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ffffff 16%, transparent),
+    0 0 22px color-mix(in srgb, var(--rarity-secret) 38%, transparent),
+    0 0 40px color-mix(in srgb, var(--rarity-secret) 18%, transparent),
+    var(--shadow-shelf);
+}
+
+.metaSecret {
+  background: linear-gradient(90deg, #16181c, #2a2e36);
+  border-color: color-mix(in srgb, var(--rarity-secret) 82%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent),
+    0 0 30px color-mix(in srgb, var(--rarity-secret) 52%, transparent),
+    0 0 50px color-mix(in srgb, var(--rarity-secret) 26%, transparent),
+    var(--shadow-shelf);
+}
+
+.metaUnlocked .rarity,
+.metaSecret .rarity {
+  color: var(--rarity-secret);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--rarity-secret) 45%, transparent);
+}
+
+.metaGlow .rarity {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--gold) 50%, transparent);
+}
+
+.pageSecret .pageTitle {
+  color: var(--rarity-secret);
 }
 
 .rarity {

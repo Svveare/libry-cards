@@ -472,8 +472,14 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
     setBroadcastBusy(false);
     setNote(
       res.ok
-        ? `Рассылка: отправлено ${res.sent ?? 0} / ${res.total ?? 0}, ошибок ${res.failed ?? 0}`
-        : `Ошибка: ${res.error ?? 'неизвестно'}`,
+        ? res.accepted
+          ? `Рассылка запущена для ${res.total ?? 0} пользователей — сообщения уйдут в фоне`
+          : `Рассылка: отправлено ${res.sent ?? 0} / ${res.total ?? 0}, ошибок ${res.failed ?? 0}`
+        : res.error === 'busy'
+          ? 'Рассылка уже идёт — подожди завершения'
+          : res.error === 'cooldown'
+            ? 'Подожди минуту перед следующей рассылкой'
+            : `Ошибка: ${res.error ?? 'неизвестно'}`,
     );
   };
 

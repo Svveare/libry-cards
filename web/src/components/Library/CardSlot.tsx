@@ -32,6 +32,7 @@ export function CardSlot({ card, collected, onSelect }: CardSlotProps) {
   const color = RARITY_COLORS[card.rarity];
   const showImage = Boolean(card.image) && !imgFailed;
   const interactive = Boolean(onSelect);
+  const isSecret = card.rarity === 'secret';
 
   const open = () => onSelect?.(card);
 
@@ -45,7 +46,7 @@ export function CardSlot({ card, collected, onSelect }: CardSlotProps) {
 
   return (
     <article
-      className={`${styles.card} ${interactive ? styles.cardInteractive : ''}`}
+      className={`${styles.card} ${isSecret ? styles.secret : ''} ${interactive ? styles.cardInteractive : ''}`}
       style={{ '--card-rarity': color } as CSSProperties}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}

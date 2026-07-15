@@ -8,10 +8,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY bot/ ./bot/
+COPY web/src/data/content.json bot/data/content.json
 COPY main.py .
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONMALLOC=malloc
 ENV DATA_PATH=/app/data/store.json
 ENV CARDS_DIR=/app/data/cards
 

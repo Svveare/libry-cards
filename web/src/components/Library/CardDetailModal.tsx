@@ -2,8 +2,8 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { Card } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
-import { getBookById, getShelfById } from '../../content/loader';
 import { getCardInitials } from './CardSlot';
+import { CardImageLightbox } from './CardImageLightbox';
 import { Button } from '../ui/Button';
 import styles from './CardDetailModal.module.css';
 
@@ -14,13 +14,10 @@ interface CardDetailModalProps {
 
 export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
   const [imgFailed, setImgFailed] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const color = RARITY_COLORS[card.rarity];
-  const shelf = getShelfById(card.shelfId);
-  const book = getBookById(card.bookId);
   const showImage = Boolean(card.image) && !imgFailed;
-  const description =
-    card.description?.trim() ||
-    'Описание пока пустое — его можно задать в админке.';
+  const description = card.description?.trim() ?? '';
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -50,7 +47,17 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
         </button>
 
         <div className={styles.cardStage}>
-          <div className={styles.cardFrame}>
+          <button
+            type="button"
+            className={styles.cardFrame}
+            onClick={() => {
+              if (showImage) setLightboxOpen(true);
+            }}
+            disabled={!showImage}
+            aria-label={
+              showImage ? 'Открыть изображение на весь экран' : undefined
+            }
+          >
             {showImage ? (
               <img
                 src={card.image}
@@ -70,17 +77,15 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
                 {card.name}
               </h2>
             </div>
-          </div>
+          </button>
         </div>
 
         <div className={styles.body}>
-          <p className={styles.origin}>
-            {[shelf?.name, book?.name].filter(Boolean).join(' · ') ||
-              'Библиотека'}
-          </p>
-          <div className={styles.descScroll}>
-            <p className={styles.description}>{description}</p>
-          </div>
+          {description ? (
+            <div className={styles.descScroll}>
+              <p className={styles.description}>{description}</p>
+            </div>
+          ) : null}
           <Button fullWidth onClick={onClose}>
             Закрыть
           </Button>
@@ -89,5 +94,16 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
     </div>
   );
 
-  return createPortal(modal, document.body);
+  return (
+    <>
+      {createPortal(modal, document.body)}
+      {lightboxOpen && showImage && card.image ? (
+        <CardImageLightbox
+          src={card.image}
+          alt={card.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
+    </>
+  );
 }

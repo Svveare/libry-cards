@@ -177,6 +177,21 @@ export function getBookById(bookId: string): Book | undefined {
   return undefined;
 }
 
+export function findBookForCardId(cardId: string): Book | undefined {
+  for (const stand of getStands()) {
+    for (const shelf of stand.shelves) {
+      for (const book of shelf.books) {
+        for (const page of book.pages) {
+          if (page.cards.some((c) => c.id === cardId)) {
+            return book;
+          }
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 export function getCardById(cardId: string): Card | undefined {
   return getCardsById().get(cardId);
 }
@@ -215,12 +230,100 @@ export function getPermanentCards(): Card[] {
   return permanentCardsCache;
 }
 
+/** Pages that are always visible (not secret-locked). */
+export function getBasePages(book: Book) {
+  return book.pages.filter((p) => !p.secret);
+}
+
+/** Secret pages defined in content for a book. */
+export function getSecretPages(book: Book) {
+  return book.pages.filter((p) => p.secret === true);
+}
+
+export function bookHasSecretPage(book: Book): boolean {
+  return book.pages.some((p) => p.secret === true);
+}
+
+/** Base pages + secret pages only when this book is unlocked. */
+export function getVisiblePages(
+  book: Book,
+  unlockedSecretBookIds: Set<string> | string[],
+) {
+  const unlocked =
+    unlockedSecretBookIds instanceof Set
+      ? unlockedSecretBookIds
+      : new Set(unlockedSecretBookIds);
+  if (unlocked.has(book.id)) return book.pages;
+  return getBasePages(book);
+}
+
+/** Secret cards from books whose secret page is unlocked. */
+export function getUnlockedSecretCards(
+  unlockedBookIds: string[] | Set<string>,
+  collectedIds?: string[] | Set<string>,
+): Card[] {
+  const unlocked =
+    unlockedBookIds instanceof Set
+      ? unlockedBookIds
+      : new Set(unlockedBookIds);
+  if (unlocked.size === 0) return [];
+  const collected =
+    collectedIds == null
+      ? null
+      : collectedIds instanceof Set
+        ? collectedIds
+        : new Set(collectedIds);
+
+  const cards: Card[] = [];
+  for (const bookId of unlocked) {
+    const book = getBookById(bookId);
+    if (!book?.enabled) continue;
+    for (const page of getSecretPages(book)) {
+      for (const card of page.cards) {
+        if (card.rarity !== 'secret') continue;
+        if (collected && collected.has(card.id)) continue;
+        cards.push(card);
+      }
+    }
+  }
+  return cards;
+}
+
+export function isBookBaseComplete(
+  book: Book,
+  collected: Set<string> | string[],
+): boolean {
+  const set = collected instanceof Set ? collected : new Set(collected);
+  const baseCards = getBasePages(book).flatMap((p) => p.cards);
+  if (baseCards.length === 0) return false;
+  return baseCards.every((c) => set.has(c.id));
+}
+
+export function isBookFullyComplete(
+  book: Book,
+  collected: Set<string> | string[],
+  unlockedSecretBookIds: Set<string> | string[],
+): boolean {
+  const unlocked =
+    unlockedSecretBookIds instanceof Set
+      ? unlockedSecretBookIds
+      : new Set(unlockedSecretBookIds);
+  if (bookHasSecretPage(book) && !unlocked.has(book.id)) return false;
+  const set = collected instanceof Set ? collected : new Set(collected);
+  const pages = getVisiblePages(book, unlocked);
+  const cards = pages.flatMap((p) => p.cards);
+  if (cards.length === 0) return false;
+  return cards.every((c) => set.has(c.id));
+}
+
 export function getBookProgress(
   book: Book,
   collected: Set<string> | string[],
+  unlockedSecretBookIds: Set<string> | string[] = [],
 ): { collected: number; total: number } {
   const set = collected instanceof Set ? collected : new Set(collected);
-  const cardIds = book.pages.flatMap((p) => p.cards.map((c) => c.id));
+  const pages = getVisiblePages(book, unlockedSecretBookIds);
+  const cardIds = pages.flatMap((p) => p.cards.map((c) => c.id));
   let count = 0;
   for (const id of cardIds) {
     if (set.has(id)) count += 1;
@@ -231,11 +334,12 @@ export function getBookProgress(
 export function getShelfProgress(
   shelf: Shelf,
   collected: Set<string> | string[],
+  unlockedSecretBookIds: Set<string> | string[] = [],
 ): { collected: number; total: number } {
   const set = collected instanceof Set ? collected : new Set(collected);
   return shelf.books.reduce(
     (acc, book) => {
-      const p = getBookProgress(book, set);
+      const p = getBookProgress(book, set, unlockedSecretBookIds);
       return {
         collected: acc.collected + p.collected,
         total: acc.total + p.total,

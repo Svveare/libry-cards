@@ -7,6 +7,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import re
 import time
@@ -24,13 +25,32 @@ from aiogram.types import (
     WebAppInfo,
 )
 
+from progress_guard import load_card_allowlist, merge_progress
+from rate_limit import check_user, rate_limit_middleware, route_group
+from store_io import (
+    flush_store,
+    get_store_lock,
+    invalidate_known_users_cache,
+    known_user_ids,
+    prune_open_claims,
+    schedule_save,
+    write_store_disk,
+)
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("libry")
+
+APP_ENV = os.environ.get("ENV", os.environ.get("APP_ENV", "")).lower()
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://example.vercel.app").rstrip("/")
-ADMIN_IDS = {
-    x.strip()
-    for x in os.environ.get("ADMIN_IDS", "1920121195").split(",")
-    if x.strip()
-}
+_admin_raw = os.environ.get("ADMIN_IDS", "").strip()
+if _admin_raw:
+    ADMIN_IDS = {x.strip() for x in _admin_raw.split(",") if x.strip()}
+elif APP_ENV == "dev":
+    ADMIN_IDS = {"1920121195"}
+else:
+    raise SystemExit("ADMIN_IDS is required in production (set ENV=dev for local fallback)")
+
 REFERRAL_BONUS = int(os.environ.get("REFERRAL_BONUS", "25"))
 DATA_PATH = Path(os.environ.get("DATA_PATH", "data/store.json"))
 CARDS_DIR = Path(os.environ.get("CARDS_DIR", "data/cards"))
@@ -38,6 +58,9 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", os.environ.get("BOTHOST_PORT", "3000")))
 PUBLIC_BASE = os.environ.get("PUBLIC_BASE", "").rstrip("/")
 MAX_IMAGE_BYTES = int(os.environ.get("MAX_IMAGE_BYTES", str(300 * 1024)))
+MAX_GRANT_COINS = 10_000
+MAX_GRANT_CASES = 50
+BROADCAST_COOLDOWN_S = 60
 
 if not BOT_TOKEN:
     raise SystemExit("BOT_TOKEN is required")
@@ -51,8 +74,10 @@ MIME_EXT = {
     "image/gif": "gif",
 }
 
-
 STORE_SCHEMA = 3
+_web_app: web.Application | None = None
+_broadcast_running = False
+_broadcast_finished_at = 0.0
 
 
 def default_store() -> dict[str, Any]:
@@ -61,7 +86,6 @@ def default_store() -> dict[str, Any]:
         "referrals": {},
         "referral_counts": {},
         "pending": {},
-        "grants": [],
         "open_claims": {},
         "card_overrides": {},
         "progress": {},
@@ -74,35 +98,35 @@ def load_store() -> dict[str, Any]:
     CARDS_DIR.mkdir(parents=True, exist_ok=True)
     if not DATA_PATH.exists():
         data = default_store()
-        save_store(data)
+        write_store_disk(DATA_PATH, data)
         return data
     with DATA_PATH.open("r", encoding="utf-8") as f:
         raw = json.load(f)
     base = default_store()
     base.update(raw)
+    base.pop("grants", None)
     base.setdefault("card_overrides", {})
     base.setdefault("progress", {})
     base.setdefault("open_claims", {})
     base.setdefault("users", {})
-    # Full player progress wipe when schema bumps (keeps card_overrides / referrals).
     if base.get("version") != STORE_SCHEMA:
         base["version"] = STORE_SCHEMA
         base["progress"] = {}
         base["pending"] = {}
         base["open_claims"] = {}
-        save_store(base)
+        write_store_disk(DATA_PATH, base)
     return base
 
 
-def save_store(data: dict[str, Any]) -> None:
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = DATA_PATH.with_suffix(".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.replace(DATA_PATH)
-
-
 STORE = load_store()
+
+
+async def persist_store() -> None:
+    if _web_app is None:
+        write_store_disk(DATA_PATH, STORE)
+        return
+    async with get_store_lock():
+        schedule_save(_web_app, DATA_PATH, STORE)
 
 
 def pending_for(user_id: str) -> dict[str, int]:
@@ -113,8 +137,7 @@ def pending_for(user_id: str) -> dict[str, int]:
 
 
 def register_referral(invitee: str, referrer: str) -> bool:
-    """Return True if newly registered."""
-    if not referrer or referrer == invitee:
+    if not referrer or referrer == invitee or not referrer.isdigit():
         return False
     if invitee in STORE["referrals"]:
         return False
@@ -122,12 +145,11 @@ def register_referral(invitee: str, referrer: str) -> bool:
     STORE["referral_counts"][referrer] = int(STORE["referral_counts"].get(referrer, 0)) + 1
     p = pending_for(invitee)
     p["coins"] = int(p.get("coins", 0)) + REFERRAL_BONUS
-    save_store(STORE)
+    invalidate_known_users_cache()
     return True
 
 
 def validate_init_data(init_data: str) -> dict[str, Any] | None:
-    """Telegram WebApp initData HMAC check (Bot API)."""
     if not init_data:
         return None
     parsed = dict(parse_qsl(init_data, keep_blank_values=True))
@@ -160,6 +182,21 @@ def public_base_from(request: web.Request) -> str:
     return f"{proto}://{host}".rstrip("/")
 
 
+def is_allowed_card_image_url(img: str, request: web.Request) -> bool:
+    if not img:
+        return True
+    if img.startswith("/media/cards/"):
+        return True
+    if not img.startswith("https://"):
+        return False
+    base = public_base_from(request)
+    if base and img.startswith(f"{base}/media/cards/"):
+        return True
+    if PUBLIC_BASE and img.startswith(f"{PUBLIC_BASE}/media/cards/"):
+        return True
+    return False
+
+
 def webapp_keyboard(play_label: bool = False) -> InlineKeyboardMarkup:
     label = "Начать играть" if play_label else "Открыть Libry Cards"
     return InlineKeyboardMarkup(
@@ -181,18 +218,11 @@ def touch_user(user_id: str) -> None:
     users[user_id] = {"seenAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
-def known_user_ids() -> list[str]:
-    ids: set[str] = set()
-    for key in ("users", "progress", "pending", "referrals", "referral_counts"):
-        bucket = STORE.get(key) or {}
-        if isinstance(bucket, dict):
-            ids.update(str(k) for k in bucket.keys() if str(k).isdigit())
-    for claim in (STORE.get("open_claims") or {}).values():
-        if isinstance(claim, dict):
-            uid = str(claim.get("userId") or "")
-            if uid.isdigit():
-                ids.add(uid)
-    return sorted(ids)
+def cors_origin(request: web.Request) -> str:
+    origin = request.headers.get("Origin", "")
+    if origin in ("http://localhost:5173", "http://127.0.0.1:5173"):
+        return origin
+    return WEBAPP_URL
 
 
 bot = Bot(BOT_TOKEN)
@@ -204,7 +234,6 @@ async def cmd_start(message: Message, command: CommandObject) -> None:
     args = (command.args or "").strip()
     user_id = str(message.from_user.id) if message.from_user else ""
     touch_user(user_id)
-    save_store(STORE)
     text = (
         "Libry Cards — библиотека карточек.\n"
         "Жми кнопку ниже, чтобы открыть игру."
@@ -221,12 +250,12 @@ async def cmd_start(message: Message, command: CommandObject) -> None:
         else:
             text = "С возвращением. Открой игру:"
 
+    await persist_store()
     await message.answer(text, reply_markup=webapp_keyboard())
 
 
 @dp.message(Command("give"))
 async def cmd_give(message: Message, command: CommandObject) -> None:
-    """Admin: /give <user_id> coins <n> | /give <user_id> cases <n>"""
     uid = str(message.from_user.id) if message.from_user else ""
     if uid not in ADMIN_IDS:
         await message.answer("Нет доступа.")
@@ -236,6 +265,9 @@ async def cmd_give(message: Message, command: CommandObject) -> None:
         await message.answer("Формат: /give <telegram_id> coins|cases <число>")
         return
     target, kind, amount_s = parts[0], parts[1].lower(), parts[2]
+    if not target.isdigit():
+        await message.answer("ID должен быть числом.")
+        return
     try:
         amount = int(amount_s)
     except ValueError:
@@ -243,6 +275,12 @@ async def cmd_give(message: Message, command: CommandObject) -> None:
         return
     if amount <= 0:
         await message.answer("Число > 0.")
+        return
+    if kind in ("coins", "coin", "монеты") and amount > MAX_GRANT_COINS:
+        await message.answer(f"Максимум {MAX_GRANT_COINS} монет за раз.")
+        return
+    if kind in ("cases", "case", "кейсы", "кейс") and amount > MAX_GRANT_CASES:
+        await message.answer(f"Максимум {MAX_GRANT_CASES} кейсов за раз.")
         return
     p = pending_for(target)
     if kind in ("coins", "coin", "монеты"):
@@ -252,7 +290,7 @@ async def cmd_give(message: Message, command: CommandObject) -> None:
     else:
         await message.answer("Вид: coins или cases")
         return
-    save_store(STORE)
+    await persist_store()
     await message.answer(
         f"Ок: {target} → +{amount} {kind}. Заберёт при входе в Mini App."
     )
@@ -263,6 +301,7 @@ async def api_health(_: web.Request) -> web.Response:
 
 
 async def api_bootstrap(request: web.Request) -> web.Response:
+    group = route_group(request.path)
     try:
         body = await request.json()
     except Exception:
@@ -274,58 +313,67 @@ async def api_bootstrap(request: web.Request) -> web.Response:
 
     user = parsed["user"]
     user_id = str(user.get("id", ""))
-    touch_user(user_id)
-    start_param = body.get("startParam") or parsed.get("start_param") or ""
+    blocked = check_user(user_id, group)
+    if blocked is not None:
+        return blocked
 
-    if isinstance(start_param, str) and start_param.startswith("ref_"):
-        register_referral(user_id, start_param[4:].strip())
+    async with get_store_lock():
+        if prune_open_claims(STORE):
+            invalidate_known_users_cache()
 
-    open_claims = STORE.setdefault("open_claims", {})
-    claim_id = None
-    coins = 0
-    cases = 0
-    for cid, claim in list(open_claims.items()):
-        if claim.get("userId") == user_id:
-            claim_id = cid
-            coins = int(claim.get("coins", 0))
-            cases = int(claim.get("bonusCases", 0))
-            break
+        touch_user(user_id)
+        start_param = body.get("startParam") or parsed.get("start_param") or ""
 
-    p = pending_for(user_id)
-    pending_coins = int(p.get("coins", 0))
-    pending_cases = int(p.get("bonusCases", 0))
+        if isinstance(start_param, str) and start_param.startswith("ref_"):
+            register_referral(user_id, start_param[4:].strip())
 
-    # Fold pending into an open claim (source of truth until /api/claim).
-    # Re-bootstrap returns the same claim so a lost client apply can retry;
-    # the Mini App skips re-applying if claimId was already applied locally.
-    if pending_coins or pending_cases:
-        if claim_id is None:
-            coins = pending_coins
-            cases = pending_cases
-            claim_id = f"{user_id}-{int(time.time())}-{coins}-{cases}"
-            open_claims[claim_id] = {
-                "userId": user_id,
-                "coins": coins,
-                "bonusCases": cases,
-            }
+        open_claims = STORE.setdefault("open_claims", {})
+        claim_id = None
+        coins = 0
+        cases = 0
+        for cid, claim in list(open_claims.items()):
+            if claim.get("userId") == user_id:
+                claim_id = cid
+                coins = int(claim.get("coins", 0))
+                cases = int(claim.get("bonusCases", 0))
+                break
+
+        p = pending_for(user_id)
+        pending_coins = int(p.get("coins", 0))
+        pending_cases = int(p.get("bonusCases", 0))
+
+        if pending_coins or pending_cases:
+            now_ts = time.time()
+            if claim_id is None:
+                coins = pending_coins
+                cases = pending_cases
+                claim_id = f"{user_id}-{int(now_ts)}-{coins}-{cases}"
+                open_claims[claim_id] = {
+                    "userId": user_id,
+                    "coins": coins,
+                    "bonusCases": cases,
+                    "createdAt": now_ts,
+                }
+            else:
+                coins = coins + pending_coins
+                cases = cases + pending_cases
+                open_claims[claim_id] = {
+                    "userId": user_id,
+                    "coins": coins,
+                    "bonusCases": cases,
+                    "createdAt": open_claims[claim_id].get("createdAt", now_ts),
+                }
+            p["coins"] = 0
+            p["bonusCases"] = 0
+
+        count = int(STORE["referral_counts"].get(user_id, 0))
+        progress = STORE.get("progress", {}).get(user_id)
+        if _web_app:
+            schedule_save(_web_app, DATA_PATH, STORE)
         else:
-            coins = coins + pending_coins
-            cases = cases + pending_cases
-            open_claims[claim_id] = {
-                "userId": user_id,
-                "coins": coins,
-                "bonusCases": cases,
-            }
-        p["coins"] = 0
-        p["bonusCases"] = 0
-        save_store(STORE)
-    else:
-        save_store(STORE)
+            write_store_disk(DATA_PATH, STORE)
 
-    count = int(STORE["referral_counts"].get(user_id, 0))
-    progress = STORE.get("progress", {}).get(user_id)
-    return web.json_response(
-        {
+        payload = {
             "userId": user_id,
             "referralCount": count,
             "pendingCoins": coins,
@@ -336,10 +384,12 @@ async def api_bootstrap(request: web.Request) -> web.Response:
             "cardOverrides": STORE.get("card_overrides", {}),
             "progress": progress,
         }
-    )
+
+    return web.json_response(payload)
 
 
 async def api_claim(request: web.Request) -> web.Response:
+    group = route_group(request.path)
     try:
         body = await request.json()
     except Exception:
@@ -348,17 +398,26 @@ async def api_claim(request: web.Request) -> web.Response:
     if not parsed:
         return web.json_response({"error": "unauthorized"}, status=401)
     user_id = str(parsed["user"].get("id", ""))
+    blocked = check_user(user_id, group)
+    if blocked is not None:
+        return blocked
+
     claim_id = body.get("claimId")
-    open_claims = STORE.setdefault("open_claims", {})
-    claim = open_claims.get(claim_id) if claim_id else None
-    if not claim or claim.get("userId") != user_id:
-        return web.json_response({"ok": True, "already": True})
-    open_claims.pop(claim_id, None)
-    save_store(STORE)
+    async with get_store_lock():
+        open_claims = STORE.setdefault("open_claims", {})
+        claim = open_claims.get(claim_id) if claim_id else None
+        if not claim or claim.get("userId") != user_id:
+            return web.json_response({"ok": True, "already": True})
+        open_claims.pop(claim_id, None)
+        if _web_app:
+            schedule_save(_web_app, DATA_PATH, STORE)
+        else:
+            write_store_disk(DATA_PATH, STORE)
     return web.json_response({"ok": True})
 
 
 async def api_progress(request: web.Request) -> web.Response:
+    group = route_group(request.path)
     try:
         body = await request.json()
     except Exception:
@@ -367,15 +426,26 @@ async def api_progress(request: web.Request) -> web.Response:
     if not parsed:
         return web.json_response({"error": "unauthorized"}, status=401)
     user_id = str(parsed["user"].get("id", ""))
+    blocked = check_user(user_id, group)
+    if blocked is not None:
+        return blocked
+
     progress = body.get("progress")
     if not isinstance(progress, dict):
         return web.json_response({"error": "bad progress"}, status=400)
-    STORE.setdefault("progress", {})[user_id] = progress
-    save_store(STORE)
+
+    async with get_store_lock():
+        merged = merge_progress(STORE, user_id, progress)
+        STORE.setdefault("progress", {})[user_id] = merged
+        if _web_app:
+            schedule_save(_web_app, DATA_PATH, STORE)
+        else:
+            write_store_disk(DATA_PATH, STORE)
     return web.json_response({"ok": True})
 
 
 async def api_admin_grant(request: web.Request) -> web.Response:
+    group = route_group(request.path)
     try:
         body = await request.json()
     except Exception:
@@ -386,6 +456,9 @@ async def api_admin_grant(request: web.Request) -> web.Response:
     admin_id = str(parsed["user"].get("id", ""))
     if admin_id not in ADMIN_IDS:
         return web.json_response({"error": "forbidden"}, status=403)
+    blocked = check_user(admin_id, group)
+    if blocked is not None:
+        return blocked
 
     target = str(body.get("targetUserId") or "").strip()
     coins = int(body.get("coins") or 0)
@@ -394,11 +467,18 @@ async def api_admin_grant(request: web.Request) -> web.Response:
         return web.json_response({"error": "bad target"}, status=400)
     if coins < 0 or cases < 0 or (coins == 0 and cases == 0):
         return web.json_response({"error": "bad amounts"}, status=400)
+    if coins > MAX_GRANT_COINS or cases > MAX_GRANT_CASES:
+        return web.json_response({"error": "amount too large"}, status=400)
 
-    p = pending_for(target)
-    p["coins"] = int(p.get("coins", 0)) + coins
-    p["bonusCases"] = int(p.get("bonusCases", 0)) + cases
-    save_store(STORE)
+    async with get_store_lock():
+        p = pending_for(target)
+        p["coins"] = int(p.get("coins", 0)) + coins
+        p["bonusCases"] = int(p.get("bonusCases", 0)) + cases
+        if _web_app:
+            schedule_save(_web_app, DATA_PATH, STORE)
+        else:
+            write_store_disk(DATA_PATH, STORE)
+
     return web.json_response(
         {
             "ok": True,
@@ -409,7 +489,28 @@ async def api_admin_grant(request: web.Request) -> web.Response:
     )
 
 
+async def _run_broadcast(text: str, targets: list[str]) -> None:
+    global _broadcast_running, _broadcast_finished_at
+    kb = webapp_keyboard(play_label=True)
+    sent = 0
+    failed = 0
+    try:
+        for uid in targets:
+            try:
+                await bot.send_message(chat_id=int(uid), text=text, reply_markup=kb)
+                sent += 1
+            except Exception:
+                failed += 1
+            await asyncio.sleep(0.04)
+        log.info("broadcast done sent=%s failed=%s total=%s", sent, failed, len(targets))
+    finally:
+        _broadcast_running = False
+        _broadcast_finished_at = time.time()
+
+
 async def api_admin_broadcast(request: web.Request) -> web.Response:
+    global _broadcast_running
+    group = route_group(request.path)
     try:
         body = await request.json()
     except Exception:
@@ -420,34 +521,34 @@ async def api_admin_broadcast(request: web.Request) -> web.Response:
     admin_id = str(parsed["user"].get("id", ""))
     if admin_id not in ADMIN_IDS:
         return web.json_response({"error": "forbidden"}, status=403)
+    blocked = check_user(admin_id, group)
+    if blocked is not None:
+        return blocked
 
     text = str(body.get("text") or "").strip()
     if not text or len(text) > 3500:
         return web.json_response({"error": "bad text"}, status=400)
 
-    targets = known_user_ids()
-    kb = webapp_keyboard(play_label=True)
-    sent = 0
-    failed = 0
-    for uid in targets:
-        try:
-            await bot.send_message(chat_id=int(uid), text=text, reply_markup=kb)
-            sent += 1
-        except Exception:
-            failed += 1
-        await asyncio.sleep(0.04)  # ~25 msg/s
+    if _broadcast_running:
+        return web.json_response({"error": "busy"}, status=409)
+    if time.time() - _broadcast_finished_at < BROADCAST_COOLDOWN_S:
+        return web.json_response({"error": "cooldown"}, status=429)
+
+    targets = known_user_ids(STORE)
+    _broadcast_running = True
+    asyncio.create_task(_run_broadcast(text, targets))
 
     return web.json_response(
         {
             "ok": True,
-            "sent": sent,
-            "failed": failed,
+            "accepted": True,
             "total": len(targets),
         }
     )
 
 
 async def api_admin_card(request: web.Request) -> web.Response:
+    group = route_group(request.path)
     try:
         body = await request.json()
     except Exception:
@@ -458,66 +559,57 @@ async def api_admin_card(request: web.Request) -> web.Response:
     admin_id = str(parsed["user"].get("id", ""))
     if admin_id not in ADMIN_IDS:
         return web.json_response({"error": "forbidden"}, status=403)
+    blocked = check_user(admin_id, group)
+    if blocked is not None:
+        return blocked
 
     card_id = str(body.get("cardId") or "").strip()
     if not CARD_ID_RE.match(card_id):
         return web.json_response({"error": "bad cardId"}, status=400)
 
-    overrides = STORE.setdefault("card_overrides", {})
-    patch: dict[str, Any] = dict(overrides.get(card_id) or {})
+    async with get_store_lock():
+        overrides = STORE.setdefault("card_overrides", {})
+        patch: dict[str, Any] = dict(overrides.get(card_id) or {})
 
-    if "name" in body and body["name"] is not None:
-        patch["name"] = str(body["name"])[:120]
-    if "description" in body and body["description"] is not None:
-        patch["description"] = str(body["description"])[:2000]
-    if "rarity" in body and body["rarity"] is not None:
-        patch["rarity"] = str(body["rarity"])[:32]
+        if "name" in body and body["name"] is not None:
+            patch["name"] = str(body["name"])[:120]
+        if "description" in body and body["description"] is not None:
+            patch["description"] = str(body["description"])[:2000]
+        if "rarity" in body and body["rarity"] is not None:
+            patch["rarity"] = str(body["rarity"])[:32]
 
-    image_b64 = body.get("imageBase64")
-    clear_image = bool(body.get("clearImage"))
-    if image_b64:
-        mime = str(body.get("mime") or "image/webp").lower().strip()
-        if mime not in MIME_EXT:
-            return web.json_response({"error": "bad mime"}, status=400)
-        raw_b64 = str(image_b64)
-        if "," in raw_b64 and raw_b64.startswith("data:"):
-            raw_b64 = raw_b64.split(",", 1)[1]
-        try:
-            data = base64.b64decode(raw_b64, validate=False)
-        except Exception:
-            return web.json_response({"error": "bad base64"}, status=400)
-        if len(data) > MAX_IMAGE_BYTES:
-            return web.json_response({"error": "image too large"}, status=400)
-        if len(data) < 32:
-            return web.json_response({"error": "image too small"}, status=400)
-
-        CARDS_DIR.mkdir(parents=True, exist_ok=True)
-        for old in CARDS_DIR.glob(f"{card_id}.*"):
+        image_b64 = body.get("imageBase64")
+        clear_image = bool(body.get("clearImage"))
+        if image_b64:
+            mime = str(body.get("mime") or "image/webp").lower().strip()
+            if mime not in MIME_EXT:
+                return web.json_response({"error": "bad mime"}, status=400)
+            raw_b64 = str(image_b64)
+            if "," in raw_b64 and raw_b64.startswith("data:"):
+                raw_b64 = raw_b64.split(",", 1)[1]
             try:
-                old.unlink()
-            except OSError:
-                pass
-        ext = MIME_EXT[mime]
-        filename = f"{card_id}.{ext}"
-        path = CARDS_DIR / filename
-        path.write_bytes(data)
-        base = public_base_from(request)
-        patch["image"] = f"{base}/media/cards/{filename}"
+                data = base64.b64decode(raw_b64, validate=False)
+            except Exception:
+                return web.json_response({"error": "bad base64"}, status=400)
+            if len(data) > MAX_IMAGE_BYTES:
+                return web.json_response({"error": "image too large"}, status=400)
+            if len(data) < 32:
+                return web.json_response({"error": "image too small"}, status=400)
 
-    elif clear_image or body.get("image") == "":
-        # Explicit remove: empty string override hides base content image too
-        patch["image"] = ""
-        for old in CARDS_DIR.glob(f"{card_id}.*"):
-            try:
-                old.unlink()
-            except OSError:
-                pass
+            CARDS_DIR.mkdir(parents=True, exist_ok=True)
+            for old in CARDS_DIR.glob(f"{card_id}.*"):
+                try:
+                    old.unlink()
+                except OSError:
+                    pass
+            ext = MIME_EXT[mime]
+            filename = f"{card_id}.{ext}"
+            path = CARDS_DIR / filename
+            path.write_bytes(data)
+            base = public_base_from(request)
+            patch["image"] = f"{base}/media/cards/{filename}"
 
-    elif body.get("image") is not None:
-        img = str(body.get("image") or "").strip()
-        if img:
-            patch["image"] = img[:2000]
-        else:
+        elif clear_image or body.get("image") == "":
             patch["image"] = ""
             for old in CARDS_DIR.glob(f"{card_id}.*"):
                 try:
@@ -525,11 +617,29 @@ async def api_admin_card(request: web.Request) -> web.Response:
                 except OSError:
                     pass
 
-    if not patch:
-        return web.json_response({"error": "empty patch"}, status=400)
+        elif body.get("image") is not None:
+            img = str(body.get("image") or "").strip()
+            if img and not is_allowed_card_image_url(img, request):
+                return web.json_response({"error": "bad image url"}, status=400)
+            if img:
+                patch["image"] = img[:2000]
+            else:
+                patch["image"] = ""
+                for old in CARDS_DIR.glob(f"{card_id}.*"):
+                    try:
+                        old.unlink()
+                    except OSError:
+                        pass
 
-    overrides[card_id] = patch
-    save_store(STORE)
+        if not patch:
+            return web.json_response({"error": "empty patch"}, status=400)
+
+        overrides[card_id] = patch
+        if _web_app:
+            schedule_save(_web_app, DATA_PATH, STORE)
+        else:
+            write_store_disk(DATA_PATH, STORE)
+
     return web.json_response({"ok": True, "cardId": card_id, "override": patch})
 
 
@@ -564,7 +674,7 @@ def cors_middleware():
             resp = web.Response(status=204)
         else:
             resp = await handler(request)
-        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Origin"] = cors_origin(request)
         resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
         resp.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
         return resp
@@ -573,11 +683,15 @@ def cors_middleware():
 
 
 async def on_startup(app: web.Application) -> None:
+    global _web_app
+    _web_app = app
     CARDS_DIR.mkdir(parents=True, exist_ok=True)
+    load_card_allowlist()
     app["bot_task"] = asyncio.create_task(dp.start_polling(bot))
 
 
 async def on_cleanup(app: web.Application) -> None:
+    await flush_store(DATA_PATH, STORE)
     task = app.get("bot_task")
     if task:
         task.cancel()
@@ -590,7 +704,7 @@ async def on_cleanup(app: web.Application) -> None:
 
 def create_app() -> web.Application:
     app = web.Application(
-        middlewares=[cors_middleware()],
+        middlewares=[rate_limit_middleware(), cors_middleware()],
         client_max_size=2 * 1024 * 1024,
     )
     app.router.add_get("/health", api_health)

@@ -68,6 +68,7 @@
   width: min(100%, 280px);
   height: min(56vh, 440px);
   aspect-ratio: 3 / 4;
+  padding: 0;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--card-rarity) 65%, var(--gold));
@@ -78,6 +79,12 @@
       transparent 65%
     ),
     #0a0806;
+  cursor: zoom-in;
+  color: inherit;
+}
+
+.cardFrame:disabled {
+  cursor: default;
 }
 
 .heroImage {
@@ -142,15 +149,6 @@
   flex-direction: column;
   padding: 14px 18px 18px;
   background: linear-gradient(180deg, #14110e, #0c0a08);
-}
-
-.origin {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gold-bright);
 }
 
 .descScroll {

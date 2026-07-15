@@ -35,8 +35,16 @@ Bothost у твоего бота **закешировал Node** (`CMD node bot/
 1. В Bothost укажи ветку **`bothost`** (отдельная ветка только с Python: `main.py` + `requirements.txt`, без `package.json`).
 2. Главный файл: **`main.py`**
 3. Язык / тип: **Python** (если нельзя сменить — **удали бота и создай нового** как Python с тем же Git, branch=`bothost`).
-4. Env: `BOT_TOKEN`, `WEBAPP_URL`, `PUBLIC_BASE`, `ADMIN_IDS`
+4. Env: `BOT_TOKEN`, `WEBAPP_URL`, `PUBLIC_BASE`, `ADMIN_IDS` (обязательно в prod; локально можно `ENV=dev`)
 5. Redeploy. В логах сборки должно быть **`pip install` / `python`**, не `npm` и не `CMD ["node",…]`.
 6. Если URL Bothost снова сменится — обнови `web/src/data/config.json` → `backendBaseUrl`.
+
+### Безопасность и память (бот)
+
+- Rate limit на API (429 при спаме), CORS только с `WEBAPP_URL`
+- Progress merge на сервере: caps на economy, allowlist карт, max +3 карты за sync
+- Store: debounced compact JSON (2s), lock на мутации, flush в thread pool
+- `DATA_PATH` держи на persistent volume Bothost (не в слое контейнера)
+- Рекомендуемая RAM: **≥512 MB** на bot+API
 
 Мини-апп и код бота для разработки — ветка **`master`** (фронт в `web/`, бот в `bot/`).

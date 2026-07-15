@@ -11,6 +11,7 @@ import { formatCooldown } from '../../utils/cooldown';
 import { formatGrantReward } from '../../utils/grantReward';
 import { useCooldownMs } from '../../hooks/useCooldownMs';
 import { Button } from '../ui/Button';
+import { ClaimMark } from '../ui/ClaimMark';
 import { SurfaceListItem } from '../ui/SurfaceListItem';
 
 interface QuestsViewProps {
@@ -96,12 +97,17 @@ export function QuestsView({
                 </div>
               }
               action={
-                <Button
-                  disabled={locked || !complete || claimed}
-                  onClick={() => onClaim(quest.id)}
-                >
-                  {claimed ? 'Забрано' : locked ? 'Жди' : 'Забрать'}
-                </Button>
+                claimed ? (
+                  <ClaimMark />
+                ) : (
+                  <Button
+                    variant={complete ? 'primary' : 'secondary'}
+                    disabled={locked || !complete}
+                    onClick={() => onClaim(quest.id)}
+                  >
+                    {locked ? 'Жди' : 'Забрать'}
+                  </Button>
+                )
               }
             />
           );

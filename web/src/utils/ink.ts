@@ -7,7 +7,7 @@ export const INK_FROM_DUPE: Record<Rarity, number> = {
   epic: 4,
   legendary: 8,
   mythic: 12,
-  secret: 12,
+  secret: 48,
 };
 
 /** Ink shop purchase prices by rarity. */
@@ -17,7 +17,7 @@ export const INK_SHOP_PRICES: Record<Rarity, number> = {
   epic: 36,
   legendary: 70,
   mythic: 120,
-  secret: 120,
+  secret: 200,
 };
 
 export const INK_SHOP_REFRESH_MS = 24 * 60 * 60 * 1000;
