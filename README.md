@@ -59,7 +59,7 @@ curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
 
 Прогресс и фото из админки живут на **Bothost** (не только в localStorage телефона/ПК).
 
-1. На Bothost env: `PUBLIC_BASE=https://bot-1784027666-4590-svveare.bothost.tech`
+1. На Bothost env: `PUBLIC_BASE=https://bot-1784045992-8108-svveare.bothost.tech`
 2. Restart бота после деплоя `bot/`
 3. Админка **из Telegram Mini App** → выбрать файл → сохранить → «Сохранено на сервере»
 4. Другое устройство: перезайди в Mini App — картинка и прогресс подтянутся с bootstrap
