@@ -5,11 +5,8 @@ import { useCaseSpin } from '../../hooks/useCaseSpin';
 import { useCooldownMs } from '../../hooks/useCooldownMs';
 import { config, getChannelUrl } from '../../content/loader';
 import {
-  canOpenBonusCase,
   canOpenDaily,
-  getTimeUntilBonusCase,
   getTimeUntilNextOpen,
-  willUseBonusCaseOpen,
 } from '../../utils/dailyOpen';
 import { formatCooldown } from '../../utils/cooldown';
 import {
@@ -23,7 +20,6 @@ import styles from './DailyBonusView.module.css';
 
 interface DailyBonusViewProps {
   lastDailyOpenAt: string | null;
-  lastBonusCaseOpenAt: string | null;
   bonusCaseOpens: number;
   dailyStreak: number;
   claimedStreakMilestones: number[];
@@ -38,7 +34,6 @@ interface DailyBonusViewProps {
 
 export function DailyBonusView({
   lastDailyOpenAt,
-  lastBonusCaseOpenAt,
   bonusCaseOpens,
   dailyStreak,
   claimedStreakMilestones,
@@ -55,10 +50,6 @@ export function DailyBonusView({
     (at: string | null) => getTimeUntilNextOpen(at),
     [],
   );
-  const getBonusRemaining = useCallback(
-    (at: string | null) => getTimeUntilBonusCase(at),
-    [],
-  );
 
   const { spinning, strip, startSpin, handleSpinEnd } = useCaseSpin({
     onCommit,
@@ -69,22 +60,14 @@ export function DailyBonusView({
     config.telegramChannel.enabled && config.telegramChannel.requiredForDaily;
   const needsChannel = channelRequired && !channelConfirmed;
   const freeReady = canOpenDaily(lastDailyOpenAt, 0);
-  const wouldUseBonus = willUseBonusCaseOpen(lastDailyOpenAt, bonusCaseOpens);
-  const bonusReady = canOpenBonusCase(lastBonusCaseOpenAt);
   const canOpen =
-    canOpenDaily(lastDailyOpenAt, bonusCaseOpens, lastBonusCaseOpenAt) &&
-    !needsChannel;
+    canOpenDaily(lastDailyOpenAt, bonusCaseOpens) && !needsChannel;
   const usingBonus = !freeReady && bonusCaseOpens > 0;
   const available = canOpen && !spinning;
   const cooldownMs = useCooldownMs(
     lastDailyOpenAt,
     getRemaining,
-    !freeReady && !(usingBonus && bonusReady),
-  );
-  const bonusCooldownMs = useCooldownMs(
-    lastBonusCaseOpenAt,
-    getBonusRemaining,
-    wouldUseBonus && !bonusReady && bonusCaseOpens > 0,
+    !freeReady && !usingBonus,
   );
 
   const handleOpen = () => {
@@ -99,16 +82,8 @@ export function DailyBonusView({
       return;
     }
     if (result.status === 'cooldown') {
-      if (bonusCaseOpens > 0 && !bonusReady) {
-        setMessage(
-          `Бонус-кейс доступен через ${formatCooldown(bonusCooldownMs)}`,
-        );
-        return;
-      }
       setMessage(
-        bonusCaseOpens > 0
-          ? 'Не удалось открыть — попробуй ещё раз'
-          : 'Бонус уже получен сегодня. Жди или получи бонус-кейс в админке.',
+        'Бонус уже получен сегодня. Жди или получи бонус-кейс в сезоне / админке.',
       );
       return;
     }
@@ -122,18 +97,16 @@ export function DailyBonusView({
       ? 'Сначала подпишись на канал'
       : freeReady
         ? 'Открыть'
-        : usingBonus && bonusReady
+        : usingBonus
           ? `Открыть бонус-кейс (${bonusCaseOpens})`
-          : usingBonus && !bonusReady
-            ? `Бонус-кейс через ${formatCooldown(bonusCooldownMs)}`
-            : `Доступно через ${formatCooldown(cooldownMs)}`;
+          : `Доступно через ${formatCooldown(cooldownMs)}`;
 
   return (
     <section className={`viewEnter ${styles.wrap}`}>
       <p className={styles.lead}>
         Крути бонус дня: монеты, карта или токен книги.
         {bonusCaseOpens > 0
-          ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — раз в час, пока ждёшь основной бонус.`
+          ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — можно крутить поверх кулдауна.`
           : null}
       </p>
 

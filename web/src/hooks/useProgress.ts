@@ -171,7 +171,6 @@ export function useProgress(userId: string, initData = '') {
       !canOpenDaily(
         prev.lastDailyOpenAt,
         prev.bonusCaseOpens,
-        prev.lastBonusCaseOpenAt,
       )
     ) {
       return { status: 'cooldown' };

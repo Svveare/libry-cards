@@ -295,7 +295,6 @@ function App() {
             />
             <DailyBonusView
               lastDailyOpenAt={progress.lastDailyOpenAt}
-              lastBonusCaseOpenAt={progress.lastBonusCaseOpenAt}
               bonusCaseOpens={progress.bonusCaseOpens}
               dailyStreak={progress.dailyStreak}
               claimedStreakMilestones={progress.claimedStreakMilestones}

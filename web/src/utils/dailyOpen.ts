@@ -2,26 +2,14 @@
 import { config, getDailyCooldownMs } from '../content/loader';
 import { canOpenAfter, getRemainingMs } from './cooldown';
 
-/** Bonus stack: mild pacing while free daily is on CD (was 8h — too harsh). */
-export const BONUS_CASE_COOLDOWN_MS = 60 * 60 * 1000;
-
-export function canOpenBonusCase(lastBonusCaseOpenAt: string | null): boolean {
-  return canOpenAfter(lastBonusCaseOpenAt, BONUS_CASE_COOLDOWN_MS);
-}
-
-export function getTimeUntilBonusCase(lastBonusCaseOpenAt: string | null): number {
-  return getRemainingMs(lastBonusCaseOpenAt, BONUS_CASE_COOLDOWN_MS);
-}
-
 export function canOpenDaily(
   lastDailyOpenAt: string | null,
   bonusCaseOpens = 0,
-  lastBonusCaseOpenAt: string | null = null,
+  _lastBonusCaseOpenAt: string | null = null,
 ): boolean {
   if (config.daily.unlimitedOpens) return true;
   if (canOpenAfter(lastDailyOpenAt, getDailyCooldownMs())) return true;
-  if (bonusCaseOpens <= 0) return false;
-  return canOpenBonusCase(lastBonusCaseOpenAt);
+  return bonusCaseOpens > 0;
 }
 
 /** True when opening will consume a bonus open rather than the daily slot. */

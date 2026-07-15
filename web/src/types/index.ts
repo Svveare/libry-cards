@@ -213,7 +213,7 @@ export interface UserProgress {
   inkShopCardIds: string[];
   inkShopRolledAt: string | null;
   bonusCaseOpens: number;
-  /** ISO of last bonus-case open (1h pacing). */
+  /** Kept for save compatibility; bonus cases have no open cooldown. */
   lastBonusCaseOpenAt: string | null;
   claimedQuestIds: string[];
   claimedAchievementIds: string[];
