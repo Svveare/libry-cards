@@ -14,11 +14,11 @@ const WEIGHTS: {
   weight: number;
 }[] = [
   { kind: 'money', weight: 15 },
-  { kind: 'common', weight: 47 },
+  { kind: 'common', weight: 48 },
   { kind: 'rare', weight: 24 },
   { kind: 'epic', weight: 9 },
   { kind: 'legendary', weight: 3 },
-  { kind: 'book', weight: 2 },
+  { kind: 'pages', weight: 1 },
 ];
 
 type NoMoneyKind = Exclude<DailyRewardKind, 'money' | 'ink'>;
@@ -32,21 +32,21 @@ const CASE_WEIGHTS: Record<
     { kind: 'rare', weight: 42 },
     { kind: 'epic', weight: 14 },
     { kind: 'legendary', weight: 3 },
-    { kind: 'book', weight: 1 },
+    { kind: 'pages', weight: 1 },
   ],
   mid: [
     { kind: 'common', weight: 22 },
-    { kind: 'rare', weight: 38 },
+    { kind: 'rare', weight: 39 },
     { kind: 'epic', weight: 28 },
     { kind: 'legendary', weight: 10 },
-    { kind: 'book', weight: 2 },
+    { kind: 'pages', weight: 1 },
   ],
   hot: [
     { kind: 'common', weight: 8 },
-    { kind: 'rare', weight: 28 },
+    { kind: 'rare', weight: 29 },
     { kind: 'epic', weight: 36 },
     { kind: 'legendary', weight: 25 },
-    { kind: 'book', weight: 3 },
+    { kind: 'pages', weight: 2 },
   ],
 };
 const RARITY_FALLBACK: Rarity[] = ['legendary', 'epic', 'rare', 'common'];
@@ -107,8 +107,8 @@ export function rollDailyReward(collectedIds: string[]): DailyReward {
     return { kind: 'money', amount: rollMoneyAmount() };
   }
 
-  if (kind === 'book') {
-    return { kind: 'book', tokens: 1 };
+  if (kind === 'pages') {
+    return { kind: 'pages', amount: 1 };
   }
 
   const card = pickCardWithFallback(kind as Rarity, collected, pool);
@@ -117,7 +117,7 @@ export function rollDailyReward(collectedIds: string[]): DailyReward {
   return { kind: 'ink', amount: 2 };
 }
 
-/** Paid case tiers: no coins; empty pool → book token. */
+/** Paid case tiers: no coins; empty pool → pages. */
 export function rollPaidCaseReward(
   collectedIds: string[],
   tier: CaseTier = 'mid',
@@ -126,14 +126,14 @@ export function rollPaidCaseReward(
   const pool = permanentPoolNoMythic();
   const collected = new Set(collectedIds);
 
-  if (kind === 'book') {
-    return { kind: 'book', tokens: 1 };
+  if (kind === 'pages') {
+    return { kind: 'pages', amount: 1 };
   }
 
   const card = pickCardWithFallback(kind as Rarity, collected, pool);
   if (card) return { kind: 'card', card };
 
-  return { kind: 'book', tokens: 1 };
+  return { kind: 'pages', amount: 1 };
 }
 
 /** Strip cell used for case animation (visual only). */
@@ -153,8 +153,8 @@ function kindLabel(kind: DailyRewardKind, moneyAmount?: number): string {
       return moneyAmount != null
         ? `+${moneyAmount}`
         : `+${MONEY_AMOUNTS[Math.floor(Math.random() * MONEY_AMOUNTS.length)]}`;
-    case 'book':
-      return 'Книга';
+    case 'pages':
+      return 'Страница';
     case 'ink':
       return 'Чернила';
     case 'common':
@@ -170,7 +170,7 @@ function kindLabel(kind: DailyRewardKind, moneyAmount?: number): string {
 
 function rewardToStripKind(reward: DailyReward): DailyRewardKind {
   if (reward.kind === 'money') return 'money';
-  if (reward.kind === 'book') return 'book';
+  if (reward.kind === 'pages') return 'pages';
   if (reward.kind === 'ink') return 'ink';
   return reward.card.rarity as DailyRewardKind;
 }
@@ -184,7 +184,7 @@ function pickTeaseNeighbors(
 ): [TeaseCell, TeaseCell] {
   // Soft pool next to money — avoids “saw legendary, got coins” after a long linger.
   const softPool: TeaseCell[] = [
-    { kind: 'book' },
+    { kind: 'pages' },
     { kind: 'epic' },
     { kind: 'rare' },
     { kind: 'ink' },
@@ -193,13 +193,13 @@ function pickTeaseNeighbors(
   const hotPool: TeaseCell[] = excludeMoney
     ? [
         { kind: 'legendary' },
-        { kind: 'book' },
+        { kind: 'pages' },
         { kind: 'epic' },
         { kind: 'rare' },
       ]
     : [
         { kind: 'legendary' },
-        { kind: 'book' },
+        { kind: 'pages' },
         { kind: 'epic' },
         { kind: 'money', moneyAmount: 50 },
         { kind: 'rare' },
@@ -258,8 +258,8 @@ export function buildCaseStrip(
 ): CaseStripItem[] {
   const excludeMoney = options?.excludeMoney ?? false;
   const fillerKinds: DailyRewardKind[] = excludeMoney
-    ? ['common', 'rare', 'epic', 'legendary', 'book']
-    : ['money', 'common', 'rare', 'epic', 'legendary', 'book'];
+    ? ['common', 'rare', 'epic', 'legendary', 'pages']
+    : ['money', 'common', 'rare', 'epic', 'legendary', 'pages'];
 
   const [teaseLeft, teaseRight] = pickTeaseNeighbors(
     excludeMoney,
@@ -302,8 +302,8 @@ export function buildCaseStrip(
 /** Lightweight idle preview strip (few cells, no winner logic). */
 export function buildPreviewStrip(excludeMoney = false): CaseStripItem[] {
   const kinds: DailyRewardKind[] = excludeMoney
-    ? ['common', 'rare', 'epic', 'legendary', 'book']
-    : ['money', 'common', 'rare', 'epic', 'legendary', 'book'];
+    ? ['common', 'rare', 'epic', 'legendary', 'pages']
+    : ['money', 'common', 'rare', 'epic', 'legendary', 'pages'];
   return Array.from({ length: 8 }, (_, i) => {
     const kind = kinds[i % kinds.length]!;
     return { id: `prev-${i}`, kind, label: kindLabel(kind) };

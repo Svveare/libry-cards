@@ -39,7 +39,12 @@ import {
   scanCollectionStats,
   type AchievementId,
 } from '../utils/achievements';
-import { applyGrant, normalizeGrantOption } from '../utils/grantReward';
+import { applyGrant, maybeGrantFullBookPage, normalizeGrantOption } from '../utils/grantReward';
+import {
+  isPagesShopAction,
+  PAGES_CATALOG,
+  type PagesCatalogItemId,
+} from '../utils/pagesShop';
 import {
   bumpDayStats,
   isAfterMiddayUnlock,
@@ -52,8 +57,9 @@ import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
-  BATTLE_PASS_XP_PER_LEVEL,
+  BP_MAX_XP,
   BP_OVERFLOW_XP,
+  PASS_BONUS_PAGE_PREMIUM_LEVELS,
   battlePassLevel,
   currentBattlePassSeasonId,
   defaultBattlePassProgress,
@@ -69,8 +75,14 @@ function applyReward(prev: UserProgress, reward: DailyReward): UserProgress {
   const next = { ...prev };
   if (reward.kind === 'money') {
     next.coins = prev.coins + reward.amount;
-  } else if (reward.kind === 'book') {
-    next.bookTokens = prev.bookTokens + reward.tokens;
+  } else if (reward.kind === 'pages') {
+    next.pages = prev.pages + reward.amount;
+  } else if ((reward as { kind: string }).kind === 'book') {
+    // Legacy daily/chest payloads
+    const tokens = (reward as { tokens?: number; amount?: number }).tokens
+      ?? (reward as { amount?: number }).amount
+      ?? 1;
+    next.pages = prev.pages + tokens;
   } else if (reward.kind === 'ink') {
     next.ink = prev.ink + reward.amount;
     next.lifetimeInkEarned = prev.lifetimeInkEarned + reward.amount;
@@ -78,6 +90,7 @@ function applyReward(prev: UserProgress, reward: DailyReward): UserProgress {
     if (!prev.collectedCardIds.includes(reward.card.id)) {
       next.collectedCardIds = [...prev.collectedCardIds, reward.card.id];
       next.rating = prev.rating + 1;
+      return maybeGrantFullBookPage(prev, next);
     } else {
       const amount = inkForDupe(reward.card.rarity);
       next.ink = prev.ink + amount;
@@ -93,8 +106,6 @@ function ensureBattlePass(progress: UserProgress): UserProgress {
   }
   return { ...progress, battlePass: defaultBattlePassProgress() };
 }
-
-const BP_MAX_XP = BATTLE_PASS_LEVELS * BATTLE_PASS_XP_PER_LEVEL;
 
 function addXp(progress: UserProgress, amount: number): UserProgress {
   let next = ensureBattlePass(withCurrentDayStats(progress));
@@ -304,17 +315,37 @@ export function useProgress(userId: string, initData = '') {
   );
 
   const commitPaidCase = useCallback(
-    (reward: DailyReward, price: number, tier?: CaseTier) => {
+    (
+      reward: DailyReward,
+      price: number,
+      tier?: CaseTier,
+      currency: 'coins' | 'pages' = 'coins',
+    ) => {
       const prev = progressRef.current;
-      if (prev.coins < price) return;
+      if (currency === 'pages') {
+        if (prev.pages < price) return;
+      } else if (prev.coins < price) {
+        return;
+      }
       const risk = tier === 'mid' || tier === 'hot';
       const hot = tier === 'hot';
-      let next: UserProgress = {
-        ...prev,
-        coins: prev.coins - price,
-        lifetimePaidCases: prev.lifetimePaidCases + 1,
-      };
-      next = bumpDayStats(next, { spentCoins: price, paidCases: 1 });
+      let next: UserProgress =
+        currency === 'pages'
+          ? {
+              ...prev,
+              pages: prev.pages - price,
+              lifetimePaidCases: prev.lifetimePaidCases + 1,
+            }
+          : {
+              ...prev,
+              coins: prev.coins - price,
+              lifetimePaidCases: prev.lifetimePaidCases + 1,
+            };
+      if (currency === 'coins' && price > 0) {
+        next = bumpDayStats(next, { spentCoins: price, paidCases: 1 });
+      } else {
+        next = bumpDayStats(next, { paidCases: 1 });
+      }
       const before = next;
       next = applyReward(next, reward);
       next = trackInkFromReward(before, next);
@@ -463,6 +494,12 @@ export function useProgress(userId: string, initData = '') {
 
       const before = prev;
       let next = applyGrant(prev, toApply);
+      if (
+        track === 'premium' &&
+        (PASS_BONUS_PAGE_PREMIUM_LEVELS as readonly number[]).includes(level)
+      ) {
+        next = applyGrant(next, { kind: 'pages', amount: 1 });
+      }
       next = trackInkFromReward(before, next);
       next = {
         ...next,
@@ -611,6 +648,62 @@ export function useProgress(userId: string, initData = '') {
     [commit],
   );
 
+  const buyPagesSpend = useCallback(
+    (
+      itemId: PagesCatalogItemId,
+    ):
+      | { status: 'ok'; message?: string }
+      | {
+          status: 'case';
+          reward: DailyReward;
+          price: number;
+          tier: CaseTier;
+          currency: 'pages';
+        }
+      | { status: 'broke' }
+      | { status: 'unknown' } => {
+      const item = PAGES_CATALOG.find((i) => i.id === itemId);
+      if (!item) return { status: 'unknown' };
+      const prev = progressRef.current;
+      if (prev.pages < item.price) return { status: 'broke' };
+
+      if (item.kind === 'ink') {
+        const amount = item.amount ?? 40;
+        commit({
+          ...prev,
+          pages: prev.pages - item.price,
+          ink: prev.ink + amount,
+          lifetimeInkEarned: prev.lifetimeInkEarned + amount,
+        });
+        return { status: 'ok', message: item.label };
+      }
+
+      if (item.kind === 'coins') {
+        const amount = item.amount ?? 80;
+        commit({
+          ...prev,
+          pages: prev.pages - item.price,
+          coins: prev.coins + amount,
+        });
+        return { status: 'ok', message: item.label };
+      }
+
+      if (item.kind === 'case' && item.tier) {
+        const reward = rollPaidCaseReward(prev.collectedCardIds, item.tier);
+        return {
+          status: 'case',
+          reward,
+          price: item.price,
+          tier: item.tier,
+          currency: 'pages',
+        };
+      }
+
+      return { status: 'unknown' };
+    },
+    [commit],
+  );
+
   const applyReferralParam = useCallback(
     (referrerId: string) => {
       const prev = progressRef.current;
@@ -707,15 +800,15 @@ export function useProgress(userId: string, initData = '') {
         if (!card) {
           return { status: 'empty', message: 'На этой полке всё собрано' };
         }
-        const useToken = prev.bookTokens >= 1;
-        if (!useToken && prev.coins < item.price) {
+        const usePage = prev.pages >= 1;
+        if (!usePage && prev.coins < item.price) {
           return { status: 'broke' };
         }
         const reward: DailyReward = { kind: 'card', card };
-        let base = useToken
-          ? { ...prev, bookTokens: prev.bookTokens - 1 }
+        let base = usePage
+          ? { ...prev, pages: prev.pages - 1 }
           : { ...prev, coins: prev.coins - item.price };
-        if (!useToken && item.price > 0) {
+        if (!usePage && item.price > 0) {
           base = bumpDayStats(base, { spentCoins: item.price });
         }
         let next = applyReward(base, reward);
@@ -724,8 +817,44 @@ export function useProgress(userId: string, initData = '') {
         return {
           status: 'ok',
           reward,
-          message: useToken ? 'Списан токен книги' : 'Карта с полки',
+          message: usePage ? 'Списана страница' : 'Карта с полки',
         };
+      }
+
+      if (isPagesShopAction(action)) {
+        if (prev.pages < item.price) return { status: 'broke' };
+
+        if (action === 'pages_ink') {
+          const amount = 40;
+          commit({
+            ...prev,
+            pages: prev.pages - item.price,
+            ink: prev.ink + amount,
+            lifetimeInkEarned: prev.lifetimeInkEarned + amount,
+          });
+          return { status: 'ok', message: '+40 чернил' };
+        }
+
+        if (action === 'pages_coins') {
+          commit({
+            ...prev,
+            pages: prev.pages - item.price,
+            coins: prev.coins + 80,
+          });
+          return { status: 'ok', message: '+80 монет' };
+        }
+
+        if (action === 'pages_soft' || action === 'pages_mid') {
+          const tier = action === 'pages_soft' ? 'soft' : 'mid';
+          const reward = rollPaidCaseReward(prev.collectedCardIds, tier);
+          return {
+            status: 'case',
+            reward,
+            price: item.price,
+            tier,
+            currency: 'pages',
+          };
+        }
       }
 
       if (prev.coins < item.price) return { status: 'broke' };
@@ -819,6 +948,7 @@ export function useProgress(userId: string, initData = '') {
     ensureInkShop,
     buyInkCard,
     buyInkSpend,
+    buyPagesSpend,
     applyReferralParam,
     applyServerBootstrap,
     replaceFromServer,

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { CaseTier, DailyReward, ShopItemId } from '../../types';
 import { config } from '../../content/loader';
 import { useCaseSpin } from '../../hooks/useCaseSpin';
+import { isPagesShopAction, pagesPriceLabel } from '../../utils/pagesShop';
 import type { ShopBuyResult } from '../../utils/shop';
 import { Button } from '../ui/Button';
 import { WalletBar } from '../ui/WalletBar';
@@ -11,12 +12,17 @@ import styles from './Shop.module.css';
 interface ShopItemViewProps {
   itemId: ShopItemId;
   coins: number;
-  bookTokens: number;
+  pages: number;
   ink: number;
   /** When true, free chest is already ready — reset_chest is blocked. */
   chestReady?: boolean;
   onBuy: (itemId: ShopItemId) => ShopBuyResult;
-  onCommitCase: (reward: DailyReward, price: number, tier?: CaseTier) => void;
+  onCommitCase: (
+    reward: DailyReward,
+    price: number,
+    tier?: CaseTier,
+    currency?: 'coins' | 'pages',
+  ) => void;
   onReward: (reward: DailyReward) => void;
   onOpenChestPlus: () => void;
   onOpenFreeChest: () => void;
@@ -24,7 +30,11 @@ interface ShopItemViewProps {
 
 function isCaseAction(action: string): boolean {
   return (
-    action === 'case_soft' || action === 'case_mid' || action === 'case_hot'
+    action === 'case_soft' ||
+    action === 'case_mid' ||
+    action === 'case_hot' ||
+    action === 'pages_soft' ||
+    action === 'pages_mid'
   );
 }
 
@@ -35,7 +45,7 @@ function isBookAction(action: string): boolean {
 export function ShopItemView({
   itemId,
   coins,
-  bookTokens,
+  pages,
   ink,
   chestReady = false,
   onBuy,
@@ -48,15 +58,22 @@ export function ShopItemView({
   const [message, setMessage] = useState<string | null>(null);
   const pendingPrice = useRef(0);
   const pendingTier = useRef<CaseTier | undefined>(undefined);
+  const pendingCurrency = useRef<'coins' | 'pages'>('coins');
 
   const isCase = item ? isCaseAction(item.action) : false;
   const isBook = item ? isBookAction(item.action) : false;
+  const isPagesSpend = item ? isPagesShopAction(item.action) : false;
   const isResetChest = item?.action === 'reset_chest';
   const resetBlocked = isResetChest && chestReady;
 
   const { spinning, strip, startSpin, handleSpinEnd } = useCaseSpin({
     onCommit: (reward) =>
-      onCommitCase(reward, pendingPrice.current, pendingTier.current),
+      onCommitCase(
+        reward,
+        pendingPrice.current,
+        pendingTier.current,
+        pendingCurrency.current,
+      ),
     onReveal: onReward,
     previewExcludeMoney: isCase,
   });
@@ -77,14 +94,18 @@ export function ShopItemView({
   }
 
   const canAfford = isBook
-    ? bookTokens >= 1 || coins >= item.price
-    : coins >= item.price;
+    ? pages >= 1 || coins >= item.price
+    : isPagesSpend
+      ? pages >= item.price
+      : coins >= item.price;
 
   const priceText = isBook
-    ? bookTokens >= 1
-      ? '1 токен книги'
+    ? pages >= 1
+      ? '1 страница'
       : `${item.price} монет`
-    : `${item.price} монет`;
+    : isPagesSpend
+      ? pagesPriceLabel(item.price)
+      : `${item.price} монет`;
 
   const handleBuy = () => {
     if (spinning) return;
@@ -96,7 +117,9 @@ export function ShopItemView({
 
     const result = onBuy(itemId);
     if (result.status === 'broke') {
-      setMessage('Недостаточно монет');
+      setMessage(
+        isPagesSpend ? 'Недостаточно страниц' : 'Недостаточно монет',
+      );
       return;
     }
     if (result.status === 'empty') {
@@ -110,6 +133,7 @@ export function ShopItemView({
     if (result.status === 'case') {
       pendingPrice.current = result.price;
       pendingTier.current = result.tier;
+      pendingCurrency.current = result.currency ?? 'coins';
       startSpin(result.reward, { excludeMoney: true });
       return;
     }
@@ -125,7 +149,7 @@ export function ShopItemView({
 
   return (
     <section className={`viewEnter ${styles.shop}`}>
-      <WalletBar coins={coins} bookTokens={bookTokens} ink={ink} />
+      <WalletBar coins={coins} pages={pages} ink={ink} />
 
       <div className={styles.detail}>
         <h2 className={styles.detailTitle}>{item.title}</h2>

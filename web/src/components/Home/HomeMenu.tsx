@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { HomeMenuId } from '../../types';
 import styles from './HomeMenu.module.css';
 
@@ -30,7 +31,7 @@ const ITEMS: {
   { id: 'friends', label: 'Друзья', hint: 'Пригласи друга' },
 ];
 
-export function HomeMenu({
+export const HomeMenu = memo(function HomeMenu({
   onSelect,
   bonusCaseOpens = 0,
   dailyStreak = 0,
@@ -69,4 +70,4 @@ export function HomeMenu({
       </div>
     </nav>
   );
-}
+});

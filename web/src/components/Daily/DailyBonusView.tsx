@@ -104,7 +104,7 @@ export function DailyBonusView({
   return (
     <section className={`viewEnter ${styles.wrap}`}>
       <p className={styles.lead}>
-        Крути бонус дня: монеты, карта или токен книги.
+        Крути бонус дня: монеты, карта или страница.
         {bonusCaseOpens > 0
           ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — можно крутить поверх кулдауна.`
           : null}

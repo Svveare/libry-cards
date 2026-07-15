@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import {
   QUESTS,
   middayHuntCopy,
@@ -9,6 +9,7 @@ import { middayUnlockRemainingMs } from '../../utils/dayStats';
 import type { DayStats } from '../../types';
 import { formatCooldown } from '../../utils/cooldown';
 import { formatGrantReward } from '../../utils/grantReward';
+import { useCooldownMs } from '../../hooks/useCooldownMs';
 import { Button } from '../ui/Button';
 import { SurfaceListItem } from '../ui/SurfaceListItem';
 
@@ -26,16 +27,16 @@ export function QuestsView({
   onClaim,
 }: QuestsViewProps) {
   const hunt = middayHuntCopy(middayHuntKindForDay(dayStats.day));
-  const [unlockLeft, setUnlockLeft] = useState(() =>
-    middayUnlockRemainingMs(dayStats),
+  const getUnlockLeft = useCallback(
+    (_at: string | null) => middayUnlockRemainingMs(dayStats),
+    [dayStats],
   );
-
-  useEffect(() => {
-    const tick = () => setUnlockLeft(middayUnlockRemainingMs(dayStats));
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [dayStats]);
+  const unlockActive = Boolean(dayStats.firstActiveAt);
+  const unlockLeft = useCooldownMs(
+    dayStats.firstActiveAt,
+    getUnlockLeft,
+    unlockActive,
+  );
 
   const huntUnlocked = unlockLeft <= 0 && Boolean(dayStats.firstActiveAt);
 

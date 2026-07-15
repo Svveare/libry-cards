@@ -1,16 +1,15 @@
 import type { GrantReward } from '../types';
 
 export const BATTLE_PASS_LEVELS = 30;
-export const BATTLE_PASS_XP_PER_LEVEL = 100;
+/** Cost to unlock level 2 (level 1 is free). Each next step +10. */
+export const BATTLE_PASS_XP_BASE = 100;
+export const BATTLE_PASS_XP_STEP = 10;
+/** @deprecated flat XP — kept for old imports; prefer xpCostToReach */
+export const BATTLE_PASS_XP_PER_LEVEL = BATTLE_PASS_XP_BASE;
 /** Reachable mid-month; Pro sells cards/cases, not a coin printer. */
 export const BATTLE_PASS_PREMIUM_PRICE = 1000;
 /** XP past season cap between overflow rewards. */
 export const BP_OVERFLOW_XP = 500;
-
-export const BP_XP = {
-  /** Default XP when claiming a simple quest. Hard/midday use quest.xp. */
-  quest: 35,
-} as const;
 
 export type PassTrack = 'free' | 'premium';
 
@@ -28,8 +27,8 @@ function coins(amount: number): GrantReward {
 function ink(amount: number): GrantReward {
   return { kind: 'ink', amount };
 }
-function book(amount: number): GrantReward {
-  return { kind: 'book', amount };
+function pages(amount: number): GrantReward {
+  return { kind: 'pages', amount };
 }
 function cases(amount: number): GrantReward {
   return { kind: 'bonusCase', amount };
@@ -50,9 +49,6 @@ export function currentBattlePassSeasonId(date = new Date()): string {
   return `${y}-${m}`;
 }
 
-/** @deprecated use currentBattlePassSeasonId — kept for storage migration reads */
-export const BATTLE_PASS_SEASON_ID = currentBattlePassSeasonId();
-
 function levelTier(level: number): BattlePassLevelDef['tier'] {
   if (level === BATTLE_PASS_LEVELS) return 'finale';
   if (level % 10 === 0) return 'great';
@@ -61,8 +57,9 @@ function levelTier(level: number): BattlePassLevelDef['tier'] {
 }
 
 /**
- * Target season totals (approx):
- * Free ~850c + 5–6 cases; Premium ~950c + ~10 cases + cards.
+ * Exactly 5 pages per full Free+Pro claim:
+ * Free L30 + Pro L5 / L15 / L25 / L30.
+ * Pro L15/L25/L30 choice stays; pages added on claim in useProgress.
  */
 function buildLevel(level: number): BattlePassLevelDef {
   const tier = levelTier(level);
@@ -71,8 +68,17 @@ function buildLevel(level: number): BattlePassLevelDef {
     return {
       level,
       tier,
-      free: [card('legendary'), cases(2), coins(120), ink(18), book(1)],
+      free: [card('legendary'), cases(2), coins(120), ink(18), pages(1)],
       premium: choice(cases(5), [card('legendary'), coins(200)]),
+    };
+  }
+
+  if (level === 5) {
+    return {
+      level,
+      tier,
+      free: [cases(1), coins(40), ink(8)],
+      premium: [pages(1), cases(1), coins(70), ink(10)],
     };
   }
 
@@ -113,7 +119,7 @@ function buildLevel(level: number): BattlePassLevelDef {
       level,
       tier,
       free: [cases(1), coins(40), ink(8)],
-      premium: [book(1), cases(1), coins(70), ink(10)],
+      premium: [cases(1), coins(70), ink(10)],
     };
   }
 
@@ -139,10 +145,7 @@ function buildLevel(level: number): BattlePassLevelDef {
       level,
       tier,
       free: coins(18 + level),
-      premium:
-        level >= 12
-          ? [coins(24 + level), book(1)]
-          : [coins(24 + level)],
+      premium: [coins(24 + level)],
     };
   }
   return {
@@ -159,24 +162,56 @@ export const BATTLE_PASS_LEVEL_DEFS: BattlePassLevelDef[] = Array.from(
   (_, i) => buildLevel(i + 1),
 );
 
+/** Cost to go FROM (level-1) TO level. Level 1 costs 0. */
+export function xpCostToReach(level: number): number {
+  if (level <= 1) return 0;
+  return BATTLE_PASS_XP_BASE + (level - 2) * BATTLE_PASS_XP_STEP;
+}
+
+/** Cumulative XP required to unlock `level` (level 1 = 0). */
+export function xpThresholdForLevel(level: number): number {
+  if (level <= 1) return 0;
+  let sum = 0;
+  for (let L = 2; L <= level; L++) {
+    sum += xpCostToReach(L);
+  }
+  return sum;
+}
+
+/** XP needed to reach max level (unlock L30). */
+export const BP_MAX_XP = xpThresholdForLevel(BATTLE_PASS_LEVELS);
+
+/** Pro levels that also grant +1 page on claim (in addition to listed rewards). */
+export const PASS_BONUS_PAGE_PREMIUM_LEVELS = [15, 25, 30] as const;
+
 export function battlePassLevel(xp: number): number {
-  return Math.min(
-    BATTLE_PASS_LEVELS,
-    Math.floor(xp / BATTLE_PASS_XP_PER_LEVEL),
-  );
+  let level = 1;
+  while (
+    level < BATTLE_PASS_LEVELS &&
+    xp >= xpThresholdForLevel(level + 1)
+  ) {
+    level++;
+  }
+  return level;
 }
 
 export function xpIntoLevel(xp: number): number {
-  if (battlePassLevel(xp) >= BATTLE_PASS_LEVELS) return BATTLE_PASS_XP_PER_LEVEL;
-  return xp % BATTLE_PASS_XP_PER_LEVEL;
+  const level = battlePassLevel(xp);
+  return xp - xpThresholdForLevel(level);
 }
 
 export function xpToNextLevel(xp: number): number {
-  if (battlePassLevel(xp) >= BATTLE_PASS_LEVELS) return 0;
-  return BATTLE_PASS_XP_PER_LEVEL - xpIntoLevel(xp);
+  const level = battlePassLevel(xp);
+  if (level >= BATTLE_PASS_LEVELS) return 0;
+  return xpCostToReach(level + 1) - xpIntoLevel(xp);
 }
 
-const BP_MAX_XP = BATTLE_PASS_LEVELS * BATTLE_PASS_XP_PER_LEVEL;
+/** XP required for the next level step (bar denominator). */
+export function xpStepCost(xp: number): number {
+  const level = battlePassLevel(xp);
+  if (level >= BATTLE_PASS_LEVELS) return BP_OVERFLOW_XP;
+  return xpCostToReach(level + 1);
+}
 
 export function overflowXpBanked(xp: number): number {
   return Math.max(0, xp - BP_MAX_XP);

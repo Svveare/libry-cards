@@ -239,6 +239,42 @@ export function ChestView({
                 );
               }
 
+              if (slot.type === 'pages') {
+                return (
+                  <button
+                    key={`p-${index}`}
+                    type="button"
+                    className={`${styles.slot} ${isPicked ? styles.picked : ''} ${revealAll && !isPicked ? styles.alt : ''}`}
+                    disabled={phase !== 'picking' || pickedIndex !== null}
+                    onClick={() => handlePick(index)}
+                    aria-label={
+                      flipped ? 'Страница' : `Слот ${index + 1}`
+                    }
+                  >
+                    <div
+                      className={`${styles.inner} ${flipped ? styles.flipped : ''}`}
+                    >
+                      <div className={`${styles.face} ${styles.back}`}>
+                        <span className={styles.backMark}>L</span>
+                        <span className={styles.backHint}>LC</span>
+                      </div>
+                      <div
+                        className={`${styles.face} ${styles.front}`}
+                        style={
+                          { '--card-rarity': '#e0b878' } as CSSProperties
+                        }
+                      >
+                        <span className={styles.initials}>+{slot.amount}</span>
+                        <span className={styles.name}>Страница</span>
+                        {revealAll && !isPicked ? (
+                          <span className={styles.rarity}>не выбрано</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </button>
+                );
+              }
+
               const { card } = slot;
               const color = RARITY_COLORS[card.rarity];
               const name = card.name === '—' ? 'Пустой слот' : card.name;

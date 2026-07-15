@@ -19,7 +19,7 @@ type InkSpendResult =
 
 interface ShopInkViewProps {
   coins: number;
-  bookTokens: number;
+  pages: number;
   ink: number;
   offerIds: string[];
   rolledAt: string | null;
@@ -34,7 +34,7 @@ interface ShopInkViewProps {
 
 export function ShopInkView({
   coins,
-  bookTokens,
+  pages,
   ink,
   offerIds,
   rolledAt,
@@ -92,7 +92,7 @@ export function ShopInkView({
 
   return (
     <section className={`viewEnter ${styles.shop}`}>
-      <WalletBar coins={coins} bookTokens={bookTokens} ink={ink} />
+      <WalletBar coins={coins} pages={pages} ink={ink} />
       <p className={styles.lead}>
         Только недостающие карты. Обновление раз в 24 часа
         {refreshMs > 0 ? ` · через ${formatCooldown(refreshMs)}` : ''}.

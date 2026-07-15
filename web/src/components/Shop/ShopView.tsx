@@ -6,7 +6,7 @@ import styles from './Shop.module.css';
 
 interface ShopViewProps {
   coins: number;
-  bookTokens: number;
+  pages: number;
   ink: number;
   onOpenCategory: (categoryId: ShopCategoryId) => void;
 }
@@ -18,18 +18,19 @@ const ACCENTS: Partial<
   cases: 'default',
   guarantee: 'premium',
   books: 'default',
+  pages: 'premium',
   ink: 'premium',
 };
 
 export function ShopView({
   coins,
-  bookTokens,
+  pages,
   ink,
   onOpenCategory,
 }: ShopViewProps) {
   return (
     <section className={`viewEnter ${styles.shop}`}>
-      <WalletBar coins={coins} bookTokens={bookTokens} ink={ink} />
+      <WalletBar coins={coins} pages={pages} ink={ink} />
       <div className={styles.list}>
         {config.shop.categories.map((cat) => (
           <CatalogRow

@@ -50,7 +50,14 @@ export function pickUncollectedFromShelf(
 
 export type ShopBuyResult =
   | { status: 'ok'; reward?: DailyReward; message?: string }
-  | { status: 'case'; reward: DailyReward; price: number; tier: CaseTier }
+  | {
+      status: 'case';
+      reward: DailyReward;
+      price: number;
+      tier: CaseTier;
+      /** Default coins; pages shop cases pay with pages. */
+      currency?: 'coins' | 'pages';
+    }
   | { status: 'chest_plus' }
   | { status: 'broke' }
   | { status: 'unknown' }

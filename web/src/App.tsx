@@ -436,7 +436,7 @@ function App() {
             />
             <ShopView
               coins={progress.coins}
-              bookTokens={progress.bookTokens}
+              pages={progress.pages}
               ink={progress.ink}
               onOpenCategory={(categoryId) =>
                 setScreen({ name: 'shopCategory', categoryId })
@@ -458,7 +458,7 @@ function App() {
               />
               <ShopInkView
                 coins={progress.coins}
-                bookTokens={progress.bookTokens}
+                pages={progress.pages}
                 ink={progress.ink}
                 offerIds={progress.inkShopCardIds}
                 rolledAt={progress.inkShopRolledAt}
@@ -483,7 +483,7 @@ function App() {
             <ShopCategoryView
               categoryId={screen.categoryId}
               coins={progress.coins}
-              bookTokens={progress.bookTokens}
+              pages={progress.pages}
               ink={progress.ink}
               onOpenItem={(itemId) => setScreen({ name: 'shopItem', itemId })}
               onOpenFreeChest={() =>
@@ -506,7 +506,7 @@ function App() {
             <ShopItemView
               itemId={screen.itemId}
               coins={progress.coins}
-              bookTokens={progress.bookTokens}
+              pages={progress.pages}
               ink={progress.ink}
               chestReady={canOpenChest(progress.lastChestOpenAt)}
               onBuy={buyShopItem}

@@ -2,13 +2,13 @@ import styles from './WalletBar.module.css';
 
 interface WalletBarProps {
   coins: number;
-  bookTokens?: number;
+  pages?: number;
   ink?: number;
 }
 
 export function WalletBar({
   coins,
-  bookTokens = 0,
+  pages = 0,
   ink = 0,
 }: WalletBarProps) {
   return (
@@ -22,10 +22,10 @@ export function WalletBar({
         <strong>{ink}</strong>
         <span className={styles.label}>чернила</span>
       </span>
-      {bookTokens > 0 ? (
+      {pages > 0 ? (
         <span className={styles.chip}>
-          <strong>{bookTokens}</strong>
-          <span className={styles.label}>книги</span>
+          <strong>{pages}</strong>
+          <span className={styles.label}>стр.</span>
         </span>
       ) : null}
     </div>

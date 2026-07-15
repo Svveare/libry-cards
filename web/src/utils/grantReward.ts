@@ -1,5 +1,5 @@
 import type { CardRarityRoll, GrantReward, UserProgress } from '../types';
-import { getPermanentCards } from '../content/loader';
+import { getPermanentCards, getBookProgress, getStands } from '../content/loader';
 
 const FALLBACK_INK: Record<CardRarityRoll, number> = {
   common: 2,
@@ -19,6 +19,42 @@ function pickUncollectedOfRarity(
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
 }
 
+/** Grant +1 page per newly completed book not yet in claimedFullBookIds. */
+export function maybeGrantFullBookPage(
+  prev: UserProgress,
+  next: UserProgress,
+): UserProgress {
+  if (next.collectedCardIds.length <= prev.collectedCardIds.length) {
+    return next;
+  }
+
+  const prevSet = new Set(prev.collectedCardIds);
+  const nextSet = new Set(next.collectedCardIds);
+  const claimed = new Set(next.claimedFullBookIds);
+  const newlyClaimed: string[] = [];
+
+  for (const stand of getStands()) {
+    for (const shelf of stand.shelves) {
+      for (const book of shelf.books) {
+        if (!book.enabled || claimed.has(book.id)) continue;
+        const after = getBookProgress(book, nextSet);
+        if (after.total <= 0 || after.collected < after.total) continue;
+        const before = getBookProgress(book, prevSet);
+        if (before.collected >= before.total) continue;
+        newlyClaimed.push(book.id);
+        claimed.add(book.id);
+      }
+    }
+  }
+
+  if (newlyClaimed.length === 0) return next;
+  return {
+    ...next,
+    pages: next.pages + newlyClaimed.length,
+    claimedFullBookIds: [...next.claimedFullBookIds, ...newlyClaimed],
+  };
+}
+
 export function normalizeGrantOption(
   opt: GrantReward | GrantReward[],
 ): GrantReward[] {
@@ -31,8 +67,10 @@ export function formatGrantReward(reward: GrantReward): string {
       return `+${reward.amount} монет`;
     case 'ink':
       return `+${reward.amount} чернил`;
-    case 'book':
-      return `+${reward.amount} токен${reward.amount === 1 ? '' : 'а'} книги`;
+    case 'pages':
+      return reward.amount === 1
+        ? '+1 страница'
+        : `+${reward.amount} страниц`;
     case 'bonusCase':
       return `+${reward.amount} бонус-кейс${reward.amount === 1 ? '' : 'а'}`;
     case 'cardRarity': {
@@ -80,8 +118,14 @@ function applyOne(prev: UserProgress, reward: GrantReward): UserProgress {
     next.lifetimeInkEarned = prev.lifetimeInkEarned + reward.amount;
     return next;
   }
-  if (reward.kind === 'book') {
-    next.bookTokens = prev.bookTokens + reward.amount;
+  if (reward.kind === 'pages') {
+    next.pages = prev.pages + reward.amount;
+    return next;
+  }
+  // Legacy grant saves
+  if ((reward as { kind: string }).kind === 'book') {
+    const amount = (reward as { amount: number }).amount;
+    next.pages = prev.pages + amount;
     return next;
   }
   if (reward.kind === 'bonusCase') {
@@ -94,7 +138,7 @@ function applyOne(prev: UserProgress, reward: GrantReward): UserProgress {
   if (card) {
     next.collectedCardIds = [...prev.collectedCardIds, card.id];
     next.rating = prev.rating + 1;
-    return next;
+    return maybeGrantFullBookPage(prev, next);
   }
 
   const amount = FALLBACK_INK[reward.rarity];

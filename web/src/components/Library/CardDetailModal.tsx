@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import type { Card } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import { getBookById, getShelfById } from '../../content/loader';
@@ -24,18 +25,12 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const layout = document.querySelector(
-      '[data-app-layout]',
-    ) as HTMLElement | null;
-    const prevLayout = layout?.style.overflow ?? '';
-    if (layout) layout.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
-      if (layout) layout.style.overflow = prevLayout;
     };
   }, []);
 
-  return (
+  const modal = (
     <div className={styles.overlay} onClick={onClose} role="presentation">
       <div
         className={styles.sheet}
@@ -61,6 +56,7 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
                 src={card.image}
                 alt={card.name}
                 className={styles.heroImage}
+                decoding="async"
                 onError={() => setImgFailed(true)}
               />
             ) : (
@@ -92,4 +88,6 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

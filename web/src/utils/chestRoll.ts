@@ -13,6 +13,8 @@ const FREE_WEIGHTS: { kind: Rarity; weight: number }[] = [
 ];
 
 const FREE_MONEY_SLOT_CHANCE = 0.08;
+const FREE_PAGES_SLOT_CHANCE = 0.015;
+const PLUS_PAGES_SLOT_CHANCE = 0.025;
 
 /** Chest+: no money, stronger. */
 const PLUS_WEIGHTS: { kind: Rarity; weight: number }[] = [
@@ -24,7 +26,8 @@ const PLUS_WEIGHTS: { kind: Rarity; weight: number }[] = [
 
 export type ChestSlot =
   | { type: 'card'; card: Card; grantsCard: boolean }
-  | { type: 'money'; amount: number };
+  | { type: 'money'; amount: number }
+  | { type: 'pages'; amount: number };
 
 function pickFromPool(pool: Card[], excludeIds: Set<string>): Card | null {
   const candidates = pool.filter((c) => !excludeIds.has(c.id));
@@ -75,8 +78,15 @@ export function rollChestSlots(
   const slots: ChestSlot[] = [];
   const weights = variant === 'plus' ? PLUS_WEIGHTS : FREE_WEIGHTS;
   const allowMoney = variant === 'free';
+  const pagesChance =
+    variant === 'plus' ? PLUS_PAGES_SLOT_CHANCE : FREE_PAGES_SLOT_CHANCE;
 
   for (let i = 0; i < 4; i++) {
+    if (Math.random() < pagesChance) {
+      slots.push({ type: 'pages', amount: 1 });
+      continue;
+    }
+
     if (allowMoney && Math.random() < FREE_MONEY_SLOT_CHANCE) {
       slots.push({ type: 'money', amount: rollMoneyAmount() });
       continue;
@@ -102,6 +112,9 @@ export function rollChestSlots(
 export function resolveChestPick(slot: ChestSlot): DailyReward {
   if (slot.type === 'money') {
     return { kind: 'money', amount: slot.amount };
+  }
+  if (slot.type === 'pages') {
+    return { kind: 'pages', amount: slot.amount };
   }
   if (slot.grantsCard) {
     return { kind: 'card', card: slot.card };

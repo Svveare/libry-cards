@@ -15,6 +15,7 @@ export type ShopCategoryId =
   | 'cases'
   | 'guarantee'
   | 'books'
+  | 'pages'
   | 'ink';
 
 export type ShopItemId =
@@ -27,7 +28,11 @@ export type ShopItemId =
   | 'pack_rare'
   | 'pack_epic'
   | 'pack_legendary'
-  | 'book_music';
+  | 'book_music'
+  | 'pages_ink'
+  | 'pages_coins'
+  | 'pages_soft'
+  | 'pages_mid';
 
 export type ShopItemAction =
   | 'open_chest_free'
@@ -39,7 +44,11 @@ export type ShopItemAction =
   | 'pack_rare'
   | 'pack_epic'
   | 'pack_legendary'
-  | 'book_music';
+  | 'book_music'
+  | 'pages_ink'
+  | 'pages_coins'
+  | 'pages_soft'
+  | 'pages_mid';
 
 export type CaseTier = 'soft' | 'mid' | 'hot';
 
@@ -164,7 +173,7 @@ export type CardRarityRoll = 'common' | 'rare' | 'epic' | 'legendary';
 export type GrantReward =
   | { kind: 'coins'; amount: number }
   | { kind: 'ink'; amount: number }
-  | { kind: 'book'; amount: number }
+  | { kind: 'pages'; amount: number }
   | { kind: 'bonusCase'; amount: number }
   | { kind: 'cardRarity'; rarity: CardRarityRoll }
   | { kind: 'choice'; options: Array<GrantReward | GrantReward[]> };
@@ -211,7 +220,10 @@ export interface UserProgress {
   lastChestOpenAt: string | null;
   coins: number;
   rating: number;
-  bookTokens: number;
+  /** Spendable page currency (not Book.pages slots). */
+  pages: number;
+  /** Book ids that already awarded a completion page. */
+  claimedFullBookIds: string[];
   ink: number;
   inkShopCardIds: string[];
   inkShopRolledAt: string | null;
@@ -246,12 +258,12 @@ export type DailyRewardKind =
   | 'rare'
   | 'epic'
   | 'legendary'
-  | 'book'
+  | 'pages'
   | 'ink';
 
 export type DailyReward =
   | { kind: 'money'; amount: number }
-  | { kind: 'book'; tokens: number }
+  | { kind: 'pages'; amount: number }
   | { kind: 'ink'; amount: number }
   | { kind: 'card'; card: Card };
 
@@ -296,7 +308,7 @@ export const REWARD_KIND_COLORS: Record<DailyRewardKind, string> = {
   rare: 'var(--rarity-rare)',
   epic: 'var(--rarity-epic)',
   legendary: 'var(--rarity-legendary)',
-  book: '#e0b878',
+  pages: '#e0b878',
   ink: '#6ec8f0',
 };
 

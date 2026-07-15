@@ -40,12 +40,17 @@
       {
         "id": "books",
         "title": "Книги",
-        "hint": "Карты с полки"
+        "hint": "Карты с полки · страницами или монетами"
+      },
+      {
+        "id": "pages",
+        "title": "Страницы",
+        "hint": "5 страниц = 1 книга (скоро)"
       },
       {
         "id": "ink",
         "title": "Чернила",
-        "hint": "Недостающие карты · раз в 2 дня"
+        "hint": "Недостающие карты · раз в сутки"
       }
     ],
     "items": [
@@ -125,9 +130,41 @@
         "id": "book_music",
         "categoryId": "books",
         "title": "Музыка",
-        "description": "Карта с полки Музыка · 1 токен или монеты",
+        "description": "Карта с полки Музыка · 1 страница или монеты",
         "price": 120,
         "action": "book_music"
+      },
+      {
+        "id": "pages_ink",
+        "categoryId": "pages",
+        "title": "Чернила",
+        "description": "+40 чернил за 1 страницу",
+        "price": 1,
+        "action": "pages_ink"
+      },
+      {
+        "id": "pages_coins",
+        "categoryId": "pages",
+        "title": "Монеты",
+        "description": "+80 монет за 1 страницу",
+        "price": 1,
+        "action": "pages_coins"
+      },
+      {
+        "id": "pages_soft",
+        "categoryId": "pages",
+        "title": "Кейс Soft",
+        "description": "Лёгкая рулетка · 1 страница",
+        "price": 1,
+        "action": "pages_soft"
+      },
+      {
+        "id": "pages_mid",
+        "categoryId": "pages",
+        "title": "Кейс Mid",
+        "description": "Больше редких · 2 страницы",
+        "price": 2,
+        "action": "pages_mid"
       }
     ]
   },

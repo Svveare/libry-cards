@@ -1,5 +1,6 @@
 import type { ShopCategoryId, ShopItemId } from '../../types';
 import { config } from '../../content/loader';
+import { isPagesShopAction, pagesPriceLabel } from '../../utils/pagesShop';
 import { CatalogRow } from '../ui/CatalogRow';
 import { WalletBar } from '../ui/WalletBar';
 import styles from './Shop.module.css';
@@ -7,20 +8,19 @@ import styles from './Shop.module.css';
 interface ShopCategoryViewProps {
   categoryId: ShopCategoryId;
   coins: number;
-  bookTokens: number;
+  pages: number;
   ink: number;
   onOpenItem: (itemId: ShopItemId) => void;
   onOpenFreeChest: () => void;
 }
 
-function priceLabel(
-  price: number,
-  action: string,
-  bookTokens: number,
-): string {
+function priceLabel(price: number, action: string, pages: number): string {
   if (price <= 0) return 'Бесплатно';
+  if (isPagesShopAction(action)) {
+    return pagesPriceLabel(price);
+  }
   if (action === 'book_music') {
-    return bookTokens > 0 ? '1 токен книги' : `${price} монет`;
+    return pages > 0 ? '1 страница' : `${price} монет`;
   }
   return `${price} монет`;
 }
@@ -28,7 +28,7 @@ function priceLabel(
 export function ShopCategoryView({
   categoryId,
   coins,
-  bookTokens,
+  pages,
   ink,
   onOpenItem,
   onOpenFreeChest,
@@ -37,7 +37,7 @@ export function ShopCategoryView({
 
   return (
     <section className={`viewEnter ${styles.shop}`}>
-      <WalletBar coins={coins} bookTokens={bookTokens} ink={ink} />
+      <WalletBar coins={coins} pages={pages} ink={ink} />
       <div className={styles.list}>
         {items.map((item) => {
           const isFreeChest = item.action === 'open_chest_free';
@@ -47,7 +47,7 @@ export function ShopCategoryView({
               key={item.id}
               title={item.title}
               description={item.description}
-              meta={priceLabel(item.price, item.action, bookTokens)}
+              meta={priceLabel(item.price, item.action, pages)}
               accent={isFreeChest ? 'free' : isPlus ? 'premium' : 'default'}
               ctaLabel={isFreeChest ? 'Открыть' : undefined}
               onClick={() =>

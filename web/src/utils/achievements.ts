@@ -194,7 +194,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'chest_15',
     title: 'Сундучный мастер',
     description: 'Открой сундук 15 раз',
-    reward: { kind: 'book', amount: 1 },
+    reward: { kind: 'pages', amount: 1 },
   },
   {
     id: 'commons_50',

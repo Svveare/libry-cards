@@ -4,13 +4,13 @@ import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
-  BATTLE_PASS_XP_PER_LEVEL,
   BP_OVERFLOW_XP,
   battlePassLevel,
   currentBattlePassSeasonId,
   overflowXpBanked,
   overflowXpToNext,
   xpIntoLevel,
+  xpStepCost,
   xpToNextLevel,
   type PassTrack,
 } from '../../data/battlePass';
@@ -61,11 +61,11 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
   const remain = xpToNextLevel(bp.xp);
   const maxed = level >= BATTLE_PASS_LEVELS;
   const overflowToNext = overflowXpToNext(bp.xp, bp.overflowClaims);
-  const overflowInto =
-    overflowXpBanked(bp.xp) % BP_OVERFLOW_XP;
+  const overflowInto = overflowXpBanked(bp.xp) % BP_OVERFLOW_XP;
+  const stepCost = xpStepCost(bp.xp);
   const pct = maxed
     ? Math.round((overflowInto / BP_OVERFLOW_XP) * 100)
-    : Math.round((into / BATTLE_PASS_XP_PER_LEVEL) * 100);
+    : Math.round((into / stepCost) * 100);
   const seasonId = currentBattlePassSeasonId();
   const [choicePick, setChoicePick] = useState<{
     level: number;
@@ -75,9 +75,9 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
   return (
     <section className={`viewEnter ${styles.wrap}`}>
       <p className={styles.lead}>
-        Сезон {seasonId} · обновление 1-го числа · 30 уровней. XP только за
-        «Забрать» в Заданиях. Pro: выбор на 15 / 25 / 30. После капа — бонус
-        каждые {BP_OVERFLOW_XP} XP.
+        Сезон {seasonId} · 30 уровней · 1-й бесплатно · XP растёт (+10 за шаг).
+        Pro: выбор на 15 / 25 / 30 · всего 5 страниц за сезон. После капа —
+        бонус каждые {BP_OVERFLOW_XP} XP.
       </p>
 
       <div className={styles.header}>
@@ -88,7 +88,7 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
           <span className={styles.xpLabel}>
             {maxed
               ? `${overflowInto} / ${BP_OVERFLOW_XP} overflow XP`
-              : `${into} / ${BATTLE_PASS_XP_PER_LEVEL} XP`}
+              : `${into} / ${stepCost} XP`}
           </span>
         </div>
         <div
@@ -96,7 +96,7 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
           role="progressbar"
           aria-valuenow={maxed ? overflowInto : into}
           aria-valuemin={0}
-          aria-valuemax={maxed ? BP_OVERFLOW_XP : BATTLE_PASS_XP_PER_LEVEL}
+          aria-valuemax={maxed ? BP_OVERFLOW_XP : stepCost}
           aria-label="Опыт сезона"
         >
           <div className={styles.barFill} style={{ width: `${pct}%` }} />
@@ -163,7 +163,15 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
                   className={`${styles.track} ${bp.premium ? '' : styles.locked}`}
                 >
                   <span className={styles.trackTagPro}>Pro</span>
-                  <p className={styles.reward}>{rewardText(def.premium)}</p>
+                  <p className={styles.reward}>
+                    {rewardText(def.premium)}
+                    {premiumChoice &&
+                    (def.level === 15 ||
+                      def.level === 25 ||
+                      def.level === 30)
+                      ? ' · +1 страница'
+                      : ''}
+                  </p>
                   <Button
                     disabled={!bp.premium || !unlocked || premClaimed}
                     onClick={() => {

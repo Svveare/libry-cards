@@ -162,13 +162,13 @@ export function RewardModal({ reward, onClose }: RewardModalProps) {
     );
   }
 
-  if (reward.kind === 'book') {
+  if (reward.kind === 'pages') {
     return (
       <ModalShell kicker="Награда" buttonLabel="Отлично" onClose={onClose}>
         <SimpleReward
-          amount={reward.tokens}
-          sub="Токен книги"
-          note="Копи для будущих книг и полок"
+          amount={reward.amount}
+          sub="Страница"
+          note="Трать в магазине · копи за полные книги"
           accent="#c4a574"
         />
       </ModalShell>

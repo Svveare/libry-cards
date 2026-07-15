@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { TelegramUser } from '../../hooks/useTelegram';
 import styles from './TopBar.module.css';
 
@@ -8,7 +9,12 @@ interface TopBarProps {
   onProfileClick: () => void;
 }
 
-export function TopBar({ user, coins, rating, onProfileClick }: TopBarProps) {
+export const TopBar = memo(function TopBar({
+  user,
+  coins,
+  rating,
+  onProfileClick,
+}: TopBarProps) {
   const name = user?.first_name ?? 'Гость';
   const initial = name.charAt(0).toUpperCase();
 
@@ -42,4 +48,4 @@ export function TopBar({ user, coins, rating, onProfileClick }: TopBarProps) {
       </div>
     </header>
   );
-}
+});

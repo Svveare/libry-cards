@@ -24,7 +24,8 @@ function defaultProgress(): UserProgress {
     lastChestOpenAt: null,
     coins: config.defaults.startingCoins,
     rating: 0,
-    bookTokens: 0,
+    pages: 0,
+    claimedFullBookIds: [],
     ink: 0,
     inkShopCardIds: [],
     inkShopRolledAt: null,
@@ -139,16 +140,6 @@ export function wasProgressWipedThisSession(): boolean {
   return wipedThisSession;
 }
 
-export function consumeForcePushDefaults(): boolean {
-  try {
-    if (localStorage.getItem(FORCE_PUSH_DEFAULTS_KEY) !== '1') return false;
-    localStorage.removeItem(FORCE_PUSH_DEFAULTS_KEY);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function getStorageKey(userId: string): string {
   return `${STORAGE_PREFIX}${userId}`;
 }
@@ -165,7 +156,17 @@ export function normalizeProgress(
     lastChestOpenAt: parsed.lastChestOpenAt ?? null,
     coins: typeof parsed.coins === 'number' ? parsed.coins : defaults.coins,
     rating: typeof parsed.rating === 'number' ? parsed.rating : defaults.rating,
-    bookTokens: typeof parsed.bookTokens === 'number' ? parsed.bookTokens : 0,
+    pages:
+      typeof parsed.pages === 'number'
+        ? parsed.pages
+        : typeof (parsed as { bookTokens?: unknown }).bookTokens === 'number'
+          ? ((parsed as { bookTokens: number }).bookTokens)
+          : 0,
+    claimedFullBookIds: Array.isArray(parsed.claimedFullBookIds)
+      ? parsed.claimedFullBookIds.filter(
+          (id): id is string => typeof id === 'string',
+        )
+      : [],
     ink: typeof parsed.ink === 'number' ? parsed.ink : 0,
     inkShopCardIds: Array.isArray(parsed.inkShopCardIds)
       ? parsed.inkShopCardIds

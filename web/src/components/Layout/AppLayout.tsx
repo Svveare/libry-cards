@@ -10,7 +10,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className={styles.layout} data-app-layout>
       <div className={styles.atmosphere} aria-hidden />
       <div className={styles.vignette} aria-hidden />
-      <div className={styles.grain} aria-hidden />
       <main className={styles.main}>{children}</main>
     </div>
   );
