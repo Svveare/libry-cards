@@ -45,36 +45,8 @@
   max-width: 480px;
   margin: 0 auto;
   min-height: 100%;
-  padding-top: calc(
-    12px +
-      max(
-        var(--tg-content-safe-area-inset-top, 0px),
-        var(--tg-safe-area-inset-top, 0px),
-        env(safe-area-inset-top, 0px)
-      )
-  );
-  padding-right: calc(
-    18px +
-      max(
-        var(--tg-content-safe-area-inset-right, 0px),
-        var(--tg-safe-area-inset-right, 0px),
-        env(safe-area-inset-right, 0px)
-      )
-  );
-  padding-bottom: calc(
-    40px +
-      max(
-        var(--tg-content-safe-area-inset-bottom, 0px),
-        var(--tg-safe-area-inset-bottom, 0px),
-        env(safe-area-inset-bottom, 0px)
-      )
-  );
-  padding-left: calc(
-    18px +
-      max(
-        var(--tg-content-safe-area-inset-left, 0px),
-        var(--tg-safe-area-inset-left, 0px),
-        env(safe-area-inset-left, 0px)
-      )
-  );
+  padding-top: var(--app-pad-top, 12px);
+  padding-right: var(--app-pad-right, 18px);
+  padding-bottom: var(--app-pad-bottom, 40px);
+  padding-left: var(--app-pad-left, 18px);
 }

@@ -108,8 +108,18 @@ function screenNeedsContent(screen: Screen): boolean {
 }
 
 function App() {
-  const { userId, user, startParam, initData, openTelegramLink, isReady, insideTelegram } =
-    useTelegram();
+  const {
+    userId,
+    user,
+    startParam,
+    initData,
+    openTelegramLink,
+    isReady,
+    insideTelegram,
+    isFullscreen,
+    canFullscreen,
+    toggleFullscreen,
+  } = useTelegram();
   const {
     progress,
     previewDailyOpen,
@@ -539,6 +549,9 @@ function App() {
               coins={progress.coins}
               rating={progress.rating}
               onProfileClick={() => setScreen({ name: 'profile' })}
+              showFullscreenToggle={insideTelegram && canFullscreen}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={toggleFullscreen}
             />
             <HomeBrand />
             <HomeMenu

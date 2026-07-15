@@ -7,6 +7,9 @@ interface TopBarProps {
   coins: number;
   rating: number;
   onProfileClick: () => void;
+  showFullscreenToggle?: boolean;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 export const TopBar = memo(function TopBar({
@@ -14,6 +17,9 @@ export const TopBar = memo(function TopBar({
   coins,
   rating,
   onProfileClick,
+  showFullscreenToggle = false,
+  isFullscreen = false,
+  onToggleFullscreen,
 }: TopBarProps) {
   const name = user?.first_name ?? 'Гость';
   const initial = name.charAt(0).toUpperCase();
@@ -26,23 +32,36 @@ export const TopBar = memo(function TopBar({
         </span>
         <span className={styles.name}>{name}</span>
       </button>
-      <div className={styles.stats}>
-        <div className={styles.stat} title="Монеты">
-          <span className={styles.statIcon} aria-hidden>
-            ◈
-          </span>
-          <div className={styles.statText}>
-            <span className={styles.statLabel}>Монеты</span>
-            <span className={styles.statValue}>{coins}</span>
+      <div className={styles.actions}>
+        {showFullscreenToggle && onToggleFullscreen ? (
+          <button
+            type="button"
+            className={styles.fsBtn}
+            onClick={onToggleFullscreen}
+            aria-pressed={isFullscreen}
+            title={isFullscreen ? 'Обычный режим' : 'На весь экран'}
+          >
+            {isFullscreen ? 'Свернуть' : 'Экран'}
+          </button>
+        ) : null}
+        <div className={styles.stats}>
+          <div className={styles.stat} title="Монеты">
+            <span className={styles.statIcon} aria-hidden>
+              ◈
+            </span>
+            <div className={styles.statText}>
+              <span className={styles.statLabel}>Монеты</span>
+              <span className={styles.statValue}>{coins}</span>
+            </div>
           </div>
-        </div>
-        <div className={`${styles.stat} ${styles.bookmark}`} title="Рейтинг">
-          <span className={styles.statIcon} aria-hidden>
-            ⌘
-          </span>
-          <div className={styles.statText}>
-            <span className={styles.statLabel}>Собрано</span>
-            <span className={styles.statValue}>{rating}</span>
+          <div className={`${styles.stat} ${styles.bookmark}`} title="Рейтинг">
+            <span className={styles.statIcon} aria-hidden>
+              ⌘
+            </span>
+            <div className={styles.statText}>
+              <span className={styles.statLabel}>Собрано</span>
+              <span className={styles.statValue}>{rating}</span>
+            </div>
           </div>
         </div>
       </div>

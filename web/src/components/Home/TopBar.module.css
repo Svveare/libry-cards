@@ -55,6 +55,32 @@
   flex-shrink: 0;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.fsBtn {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--gold-bright);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fsBtn:active {
+  opacity: 0.85;
+}
+
 .stat {
   display: flex;
   align-items: center;
