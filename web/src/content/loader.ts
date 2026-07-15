@@ -62,9 +62,73 @@ function patchContentWithOverrides(
   return next;
 }
 
+function isSecretPage(page: { secret?: boolean; rarity?: string }): boolean {
+  return page.secret === true || page.rarity === 'secret';
+}
+
+/**
+ * Heal stale admin overlays saved before secret pages existed: copy any
+ * missing secret pages from bundled base (by page id), and ensure secret
+ * flags on pages that already match a base secret page.
+ */
+function mergeMissingSecretPagesFromBase(
+  overlay: ContentData,
+  base: ContentData,
+): { data: ContentData; added: boolean } {
+  const next = structuredClone(overlay);
+  const baseBooks = new Map<string, Book>();
+  for (const stand of base.stands) {
+    for (const shelf of stand.shelves) {
+      for (const book of shelf.books) {
+        baseBooks.set(book.id, book);
+      }
+    }
+  }
+
+  let added = false;
+  for (const stand of next.stands) {
+    for (const shelf of stand.shelves) {
+      for (const book of shelf.books) {
+        const baseBook = baseBooks.get(book.id);
+        if (!baseBook) continue;
+
+        const overlayPageIds = new Set(book.pages.map((p) => p.id));
+        for (const basePage of baseBook.pages) {
+          if (!isSecretPage(basePage)) continue;
+
+          if (!overlayPageIds.has(basePage.id)) {
+            book.pages.push(structuredClone(basePage));
+            overlayPageIds.add(basePage.id);
+            added = true;
+            continue;
+          }
+
+          const existing = book.pages.find((p) => p.id === basePage.id);
+          if (!existing) continue;
+          if (existing.secret !== true) {
+            existing.secret = true;
+            added = true;
+          }
+          if (existing.rarity !== 'secret') {
+            existing.rarity = 'secret';
+            added = true;
+          }
+        }
+      }
+    }
+  }
+
+  return { data: next, added };
+}
+
 function applyOverlay(base: ContentData): ContentData {
   const overlay = loadContentOverlay();
-  const withLocal = overlay ?? base;
+  let withLocal: ContentData = base;
+  if (overlay) {
+    const healed = mergeMissingSecretPagesFromBase(overlay, base);
+    withLocal = healed.data;
+    if (healed.added) saveContentOverlay(healed.data);
+  }
   return patchContentWithOverrides(withLocal, serverOverrides);
 }
 
@@ -101,7 +165,14 @@ export function applyCardOverrides(overrides: Record<string, CardOverride>): voi
   serverOverrides = { ...serverOverrides, ...overrides };
   if (!baseContent) return;
   const overlay = loadContentOverlay();
-  const withLocal = overlay ? structuredClone(overlay) : structuredClone(baseContent);
+  let withLocal: ContentData;
+  if (overlay) {
+    const healed = mergeMissingSecretPagesFromBase(overlay, baseContent);
+    withLocal = healed.data;
+    if (healed.added) saveContentOverlay(healed.data);
+  } else {
+    withLocal = structuredClone(baseContent);
+  }
   content = patchContentWithOverrides(withLocal, serverOverrides);
   clearCaches();
 }
@@ -232,16 +303,16 @@ export function getPermanentCards(): Card[] {
 
 /** Pages that are always visible (not secret-locked). */
 export function getBasePages(book: Book) {
-  return book.pages.filter((p) => !p.secret);
+  return book.pages.filter((p) => !isSecretPage(p));
 }
 
 /** Secret pages defined in content for a book. */
 export function getSecretPages(book: Book) {
-  return book.pages.filter((p) => p.secret === true);
+  return book.pages.filter((p) => isSecretPage(p));
 }
 
 export function bookHasSecretPage(book: Book): boolean {
-  return book.pages.some((p) => p.secret === true);
+  return book.pages.some((p) => isSecretPage(p));
 }
 
 /** Base pages + secret pages only when this book is unlocked. */
