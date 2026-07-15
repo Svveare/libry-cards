@@ -1,85 +1,37 @@
 # Libry Cards
 
-Telegram Mini App — коллекционная библиотека карточек.
+Telegram Mini App + Bothost bot (monorepo).
 
-## v1
+## Структура
 
-- Музыка → «Русский реп» (20 карт)
-- Ежедневка и сундук 48 ч — подписка на `@librycards` (`getChatMember` через Vercel `/api`)
-- Магазин: сброс ожидания 75, Сундук+ 150, кейсы 75/100/150, гарантия 100/150/200
-- Задания, ачивки, друзья, админка (`adminUserIds`)
-- Рефералка и админ-выдача: бот + API на Bothost (`bot/`)
+| Путь | Назначение |
+|------|------------|
+| `web/` | Mini App (React/Vite) → Vercel |
+| `bot/` + корневые `main.py`, `requirements.txt` | Telegram bot + API → Bothost |
+| `api/` | Vercel serverless (`check-subscription`) |
+| `Dockerfile` | кастомный Python-образ для Bothost |
 
-## Локально
+**Важно:** `package.json` лежит в `web/`, не в корне. Иначе Bothost думает, что это Node, и запускает `node bot/main.py`.
 
-```bash
-npm.cmd install
-npm.cmd run build
-npm.cmd run dev
-```
-
-`http://localhost:5173` — фронт. API подписки (`/api/check-subscription`) на Vercel; локально без env проверка может вернуть ошибку сети.
-
-## Деплой Mini App (Vercel)
-
-1. Push в GitHub → Vercel deploy (или `npx vercel --prod`)
-2. Environment Variables на Vercel:
-   - `TELEGRAM_BOT_TOKEN` — токен `@librycards_bot`
-   - `TELEGRAM_CHANNEL_USERNAME` — `@librycards`
-   - `TELEGRAM_WEBAPP_URL` — `https://<ваш-проект>.vercel.app` (без `/` в конце)
-3. BotFather → Web App URL = тот же HTTPS
-4. Бот должен быть **админом** канала `@librycards` (иначе `getChatMember` не работает)
-5. В `src/data/config.json` укажи `backendBaseUrl` = публичный HTTPS Bothost (после деплоя бота)
-6. Smoke: daily → сундук → кейс → library → friends → admin
-
-**Важно:** один и тот же `BOT_TOKEN` нельзя одновременно держать на webhook и на Bothost long polling. Для рефералки/грантов используй Bothost:
+## Mini App (Vercel)
 
 ```bash
-curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
+cd web
+npm install
+npm run build
+npm run dev
 ```
 
-## Деплой бота (Bothost)
+Vercel: root репозитория, `vercel.json` сам ставит `npm … --prefix web`. Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_USERNAME`, `TELEGRAM_WEBAPP_URL`.
 
-Репозиторий: https://github.com/Svveare/libry-cards.git  
-Код бота в папке **`bot/`**. В корне репо есть **`Dockerfile`** — Bothost иначе видит `package.json` и запускает Node (`node bot/main.py` → ошибка).
+В `web/src/data/config.json` → `backendBaseUrl` = HTTPS Bothost.
 
-См. [`bot/README.md`](bot/README.md). Кратко:
+## Бот (Bothost)
 
-1. Git URL репозитория; если есть опция «кастомный Dockerfile» — включи
-2. Env: `BOT_TOKEN`, `WEBAPP_URL` (Vercel), `ADMIN_IDS=1920121195`,  
-   `PUBLIC_BASE=https://bot-1784045992-8108-svveare.bothost.tech`
-3. После деплоя: `GET https://…bothost.tech/api/health`
+1. Git URL этого репо (корень = Python: `requirements.txt` + `main.py`)
+2. Главный файл: **`main.py`** (не Node / не `bot/main.py` через node)
+3. Env: `BOT_TOKEN`, `WEBAPP_URL`, `PUBLIC_BASE=https://bot-….bothost.tech`, `ADMIN_IDS`
+4. Redeploy после пуша → в **логах сборки** должно быть `pip install`, **не** `npm install`
+5. `GET …/api/health`
 
-Приглашение: `https://t.me/librycards_bot?start=ref_{telegramId}`  
-Бот отвечает кнопкой Web App → Mini App забирает бонус через `POST /api/bootstrap`.
-
-Админ: вкладка **Выдача** в Mini App или `/give <id> coins|cases N`.
-
-## Картинки и один профиль на устройствах
-
-Прогресс и фото из админки живут на **Bothost** (не только в localStorage телефона/ПК).
-
-1. На Bothost env: `PUBLIC_BASE=https://bot-1784045992-8108-svveare.bothost.tech`
-2. Restart бота после деплоя `bot/`
-3. Админка **из Telegram Mini App** → выбрать файл → сохранить → «Сохранено на сервере»
-4. Другое устройство: перезайди в Mini App — картинка и прогресс подтянутся с bootstrap
-
-ПК и телефон раньше выглядели как «два профиля», потому что у каждого устройства свой localStorage. Теперь источник истины — Bothost для одного Telegram ID.
-
-### Картинки с ПК на телефон (запасной путь без сервера)
-
-1. Файл в `public/cards/name.webp`
-2. В JSON путь `/cards/name.webp`
-3. Push → Vercel
-
-Яндекс.Диск / Google Drive не подойдут для прямых ссылок.
-
-## Без backendBaseUrl
-
-- Прогресс в localStorage
-- Реферал invitee +25 локально по `start_param` (счётчик инвайтера не растёт)
-- Выдача другому ID невозможна
-
-## Стек
-
-React 19 + Vite + TypeScript · Vercel (`/api` подписка) · Bothost (aiogram + aiohttp)
+Подробнее: [`bot/README.md`](bot/README.md).
