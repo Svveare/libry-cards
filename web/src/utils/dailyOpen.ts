@@ -2,8 +2,8 @@
 import { config, getDailyCooldownMs } from '../content/loader';
 import { canOpenAfter, getRemainingMs } from './cooldown';
 
-/** Bonus stack paces one open every 8h while free daily is on cooldown. */
-export const BONUS_CASE_COOLDOWN_MS = 8 * 60 * 60 * 1000;
+/** Bonus stack: mild pacing while free daily is on CD (was 8h — too harsh). */
+export const BONUS_CASE_COOLDOWN_MS = 60 * 60 * 1000;
 
 export function canOpenBonusCase(lastBonusCaseOpenAt: string | null): boolean {
   return canOpenAfter(lastBonusCaseOpenAt, BONUS_CASE_COOLDOWN_MS);

@@ -133,7 +133,7 @@ export function DailyBonusView({
       <p className={styles.lead}>
         Крути бонус дня: монеты, карта или токен книги.
         {bonusCaseOpens > 0
-          ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — не чаще одного раз в 8 ч, пока ждёшь основной бонус.`
+          ? ` У тебя ${bonusCaseOpens} бонус-открыт${bonusCaseOpens === 1 ? 'ие' : bonusCaseOpens < 5 ? 'ия' : 'ий'} — раз в час, пока ждёшь основной бонус.`
           : null}
       </p>
 

@@ -213,7 +213,7 @@ export interface UserProgress {
   inkShopCardIds: string[];
   inkShopRolledAt: string | null;
   bonusCaseOpens: number;
-  /** ISO of last bonus-case open (8h pacing). */
+  /** ISO of last bonus-case open (1h pacing). */
   lastBonusCaseOpenAt: string | null;
   claimedQuestIds: string[];
   claimedAchievementIds: string[];
