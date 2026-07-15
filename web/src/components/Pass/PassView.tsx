@@ -1,29 +1,51 @@
+import { useState } from 'react';
 import type { GrantReward, UserProgress } from '../../types';
 import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
   BATTLE_PASS_XP_PER_LEVEL,
+  BP_OVERFLOW_XP,
   battlePassLevel,
   currentBattlePassSeasonId,
+  overflowXpBanked,
+  overflowXpToNext,
   xpIntoLevel,
   xpToNextLevel,
   type PassTrack,
 } from '../../data/battlePass';
-import { formatGrantList, formatGrantReward } from '../../utils/grantReward';
+import {
+  formatGrantList,
+  formatGrantReward,
+  normalizeGrantOption,
+} from '../../utils/grantReward';
 import { Button } from '../ui/Button';
 import styles from './PassView.module.css';
 
 interface PassViewProps {
   progress: UserProgress;
   onBuyPremium: () => boolean;
-  onClaim: (level: number, track: PassTrack) => boolean;
+  onClaim: (
+    level: number,
+    track: PassTrack,
+    choiceIndex?: number,
+  ) => boolean;
 }
 
 function rewardText(reward: GrantReward | GrantReward[]): string {
   return Array.isArray(reward)
     ? formatGrantList(reward)
     : formatGrantReward(reward);
+}
+
+function optionText(opt: GrantReward | GrantReward[]): string {
+  return formatGrantList(normalizeGrantOption(opt));
+}
+
+function isChoiceReward(
+  reward: GrantReward | GrantReward[],
+): reward is Extract<GrantReward, { kind: 'choice' }> {
+  return !Array.isArray(reward) && reward.kind === 'choice';
 }
 
 const TIER_LABEL: Record<string, string> = {
@@ -38,16 +60,24 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
   const into = xpIntoLevel(bp.xp);
   const remain = xpToNextLevel(bp.xp);
   const maxed = level >= BATTLE_PASS_LEVELS;
+  const overflowToNext = overflowXpToNext(bp.xp, bp.overflowClaims);
+  const overflowInto =
+    overflowXpBanked(bp.xp) % BP_OVERFLOW_XP;
   const pct = maxed
-    ? 100
+    ? Math.round((overflowInto / BP_OVERFLOW_XP) * 100)
     : Math.round((into / BATTLE_PASS_XP_PER_LEVEL) * 100);
   const seasonId = currentBattlePassSeasonId();
+  const [choicePick, setChoicePick] = useState<{
+    level: number;
+    options: Array<GrantReward | GrantReward[]>;
+  } | null>(null);
 
   return (
     <section className={`viewEnter ${styles.wrap}`}>
       <p className={styles.lead}>
         Сезон {seasonId} · обновление 1-го числа · 30 уровней. XP только за
-        «Забрать» в Заданиях. Вехи ×5 / ×10 / финал — лучшие награды.
+        «Забрать» в Заданиях. Pro: выбор на 15 / 25 / 30. После капа — бонус
+        каждые {BP_OVERFLOW_XP} XP.
       </p>
 
       <div className={styles.header}>
@@ -57,23 +87,23 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
           </span>
           <span className={styles.xpLabel}>
             {maxed
-              ? 'Максимум сезона'
+              ? `${overflowInto} / ${BP_OVERFLOW_XP} overflow XP`
               : `${into} / ${BATTLE_PASS_XP_PER_LEVEL} XP`}
           </span>
         </div>
         <div
           className={styles.bar}
           role="progressbar"
-          aria-valuenow={into}
+          aria-valuenow={maxed ? overflowInto : into}
           aria-valuemin={0}
-          aria-valuemax={BATTLE_PASS_XP_PER_LEVEL}
+          aria-valuemax={maxed ? BP_OVERFLOW_XP : BATTLE_PASS_XP_PER_LEVEL}
           aria-label="Опыт сезона"
         >
           <div className={styles.barFill} style={{ width: `${pct}%` }} />
         </div>
         <p className={styles.xpRemain}>
           {maxed
-            ? 'Все уровни открыты — забери награды ниже'
+            ? `Ещё ${overflowToNext} XP до бонуса (${bp.premium ? '+1 бонус-кейс' : '+8 чернил'})`
             : `До следующего уровня осталось ${remain} XP`}
         </p>
         {!bp.premium ? (
@@ -102,6 +132,9 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
           const freeClaimed = bp.claimedFree.includes(def.level);
           const premClaimed = bp.claimedPremium.includes(def.level);
           const milestone = def.tier && def.tier !== 'normal';
+          const premiumChoice = isChoiceReward(def.premium)
+            ? def.premium
+            : null;
           return (
             <article
               key={def.level}
@@ -133,14 +166,25 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
                   <p className={styles.reward}>{rewardText(def.premium)}</p>
                   <Button
                     disabled={!bp.premium || !unlocked || premClaimed}
-                    onClick={() => onClaim(def.level, 'premium')}
+                    onClick={() => {
+                      if (premiumChoice) {
+                        setChoicePick({
+                          level: def.level,
+                          options: premiumChoice.options,
+                        });
+                        return;
+                      }
+                      onClaim(def.level, 'premium');
+                    }}
                   >
                     {premClaimed
                       ? '✓'
                       : !bp.premium
                         ? 'Pro'
                         : unlocked
-                          ? 'Забрать'
+                          ? premiumChoice
+                            ? 'Выбрать'
+                            : 'Забрать'
                           : '🔒'}
                   </Button>
                 </div>
@@ -149,6 +193,42 @@ export function PassView({ progress, onBuyPremium, onClaim }: PassViewProps) {
           );
         })}
       </div>
+
+      {choicePick ? (
+        <div
+          className={styles.choiceOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Выбор награды"
+        >
+          <div className={styles.choiceModal}>
+            <p className={styles.choiceTitle}>
+              Уровень {choicePick.level} · выбери награду
+            </p>
+            <div className={styles.choiceList}>
+              {choicePick.options.map((opt, index) => (
+                <Button
+                  key={index}
+                  fullWidth
+                  onClick={() => {
+                    onClaim(choicePick.level, 'premium', index);
+                    setChoicePick(null);
+                  }}
+                >
+                  {optionText(opt)}
+                </Button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={styles.choiceCancel}
+              onClick={() => setChoicePick(null)}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

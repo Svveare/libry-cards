@@ -25,7 +25,13 @@ import {
   questClaimKey,
   type QuestId,
 } from '../utils/quests';
-import { inkForDupe, inkShopPrice, REFERRAL_INVITEE_COINS } from '../utils/ink';
+import {
+  INK_CATALOG,
+  inkForDupe,
+  inkShopPrice,
+  REFERRAL_INVITEE_COINS,
+  type InkCatalogItemId,
+} from '../utils/ink';
 import { needsInkShopRefresh, rollInkShopOffers } from '../utils/inkShop';
 import {
   ACHIEVEMENTS,
@@ -33,7 +39,7 @@ import {
   scanCollectionStats,
   type AchievementId,
 } from '../utils/achievements';
-import { applyGrant } from '../utils/grantReward';
+import { applyGrant, normalizeGrantOption } from '../utils/grantReward';
 import {
   bumpDayStats,
   isAfterMiddayUnlock,
@@ -46,6 +52,8 @@ import {
   BATTLE_PASS_LEVEL_DEFS,
   BATTLE_PASS_LEVELS,
   BATTLE_PASS_PREMIUM_PRICE,
+  BATTLE_PASS_XP_PER_LEVEL,
+  BP_OVERFLOW_XP,
   battlePassLevel,
   currentBattlePassSeasonId,
   defaultBattlePassProgress,
@@ -86,15 +94,37 @@ function ensureBattlePass(progress: UserProgress): UserProgress {
   return { ...progress, battlePass: defaultBattlePassProgress() };
 }
 
+const BP_MAX_XP = BATTLE_PASS_LEVELS * BATTLE_PASS_XP_PER_LEVEL;
+
 function addXp(progress: UserProgress, amount: number): UserProgress {
   let next = ensureBattlePass(withCurrentDayStats(progress));
-  const levelBefore = battlePassLevel(next.battlePass.xp);
-  if (levelBefore >= BATTLE_PASS_LEVELS) return next;
   const xp = next.battlePass.xp + amount;
   next = {
     ...next,
     battlePass: { ...next.battlePass, xp },
   };
+
+  while (
+    Math.max(
+      0,
+      Math.floor((next.battlePass.xp - BP_MAX_XP) / BP_OVERFLOW_XP),
+    ) > next.battlePass.overflowClaims
+  ) {
+    const before = next;
+    const overflowReward = next.battlePass.premium
+      ? ({ kind: 'bonusCase', amount: 1 } as const)
+      : ({ kind: 'ink', amount: 8 } as const);
+    next = applyGrant(next, overflowReward);
+    next = trackInkFromReward(before, next);
+    next = {
+      ...next,
+      battlePass: {
+        ...next.battlePass,
+        overflowClaims: next.battlePass.overflowClaims + 1,
+      },
+    };
+  }
+
   return next;
 }
 
@@ -406,7 +436,7 @@ export function useProgress(userId: string, initData = '') {
   }, [commit]);
 
   const claimBattlePassReward = useCallback(
-    (level: number, track: PassTrack): boolean => {
+    (level: number, track: PassTrack, choiceIndex?: number): boolean => {
       let prev = ensureBattlePass(withCurrentDayStats(progressRef.current));
       const def = BATTLE_PASS_LEVEL_DEFS.find((l) => l.level === level);
       if (!def || level < 1 || level > BATTLE_PASS_LEVELS) return false;
@@ -419,8 +449,20 @@ export function useProgress(userId: string, initData = '') {
       if (claimed.includes(level)) return false;
 
       const reward = track === 'free' ? def.free : def.premium;
+      let toApply = reward;
+      if (!Array.isArray(reward) && reward.kind === 'choice') {
+        if (
+          choiceIndex === undefined ||
+          choiceIndex < 0 ||
+          choiceIndex >= reward.options.length
+        ) {
+          return false;
+        }
+        toApply = normalizeGrantOption(reward.options[choiceIndex]!);
+      }
+
       const before = prev;
-      let next = applyGrant(prev, reward);
+      let next = applyGrant(prev, toApply);
       next = trackInkFromReward(before, next);
       next = {
         ...next,
@@ -497,6 +539,74 @@ export function useProgress(userId: string, initData = '') {
       next = trackRewardOutcome(prev, next, reward);
       commit(next);
       return { status: 'ok', card };
+    },
+    [commit],
+  );
+
+  const buyInkSpend = useCallback(
+    (
+      itemId: InkCatalogItemId,
+    ):
+      | { status: 'ok'; message?: string }
+      | { status: 'broke' }
+      | { status: 'empty'; message: string }
+      | { status: 'unknown' } => {
+      const item = INK_CATALOG.find((i) => i.id === itemId);
+      if (!item) return { status: 'unknown' };
+      const prev = progressRef.current;
+      if (prev.ink < item.price) return { status: 'broke' };
+
+      if (item.kind === 'resetChest') {
+        if (canOpenChest(prev.lastChestOpenAt)) {
+          return { status: 'empty', message: 'Сундук уже доступен' };
+        }
+        let next: UserProgress = {
+          ...prev,
+          ink: prev.ink - item.price,
+          inkPurchases: prev.inkPurchases + 1,
+          lastChestOpenAt: null,
+        };
+        next = bumpDayStats(next, { inkBuys: 1 });
+        if (isAfterMiddayUnlock(next.dayStats)) {
+          next = bumpDayStats(next, { middayInkBuys: 1 });
+        }
+        commit(next);
+        return { status: 'ok', message: 'Ожидание сундука сброшено' };
+      }
+
+      if (item.kind === 'coins') {
+        const amount = item.amount ?? 0;
+        let next: UserProgress = {
+          ...prev,
+          ink: prev.ink - item.price,
+          inkPurchases: prev.inkPurchases + 1,
+          coins: prev.coins + amount,
+        };
+        next = bumpDayStats(next, { inkBuys: 1 });
+        if (isAfterMiddayUnlock(next.dayStats)) {
+          next = bumpDayStats(next, { middayInkBuys: 1 });
+        }
+        commit(next);
+        return { status: 'ok', message: item.label };
+      }
+
+      if (item.kind === 'bonusCase') {
+        const amount = item.amount ?? 1;
+        let next: UserProgress = {
+          ...prev,
+          ink: prev.ink - item.price,
+          inkPurchases: prev.inkPurchases + 1,
+          bonusCaseOpens: prev.bonusCaseOpens + amount,
+        };
+        next = bumpDayStats(next, { inkBuys: 1 });
+        if (isAfterMiddayUnlock(next.dayStats)) {
+          next = bumpDayStats(next, { middayInkBuys: 1 });
+        }
+        commit(next);
+        return { status: 'ok', message: item.label };
+      }
+
+      return { status: 'unknown' };
     },
     [commit],
   );
@@ -631,6 +741,9 @@ export function useProgress(userId: string, initData = '') {
       }
 
       if (action === 'reset_chest') {
+        if (canOpenChest(prev.lastChestOpenAt)) {
+          return { status: 'empty', message: 'Сундук уже доступен' };
+        }
         let next: UserProgress = {
           ...prev,
           coins: prev.coins - item.price,
@@ -705,6 +818,7 @@ export function useProgress(userId: string, initData = '') {
     buyShopItem,
     ensureInkShop,
     buyInkCard,
+    buyInkSpend,
     applyReferralParam,
     applyServerBootstrap,
     replaceFromServer,

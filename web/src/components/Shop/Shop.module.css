@@ -118,3 +118,47 @@
   color: #9dd0e8;
 }
 
+.catalog {
+  margin: 0 0 18px;
+  padding: 14px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.catalogTitle {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.catalogList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.catalogRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.catalogLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.catalogPrice {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9dd0e8;
+}
+

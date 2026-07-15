@@ -72,6 +72,8 @@ function parseBattlePass(raw: unknown): BattlePassProgress {
     claimedPremium: Array.isArray(p.claimedPremium)
       ? p.claimedPremium.filter((n) => typeof n === 'number')
       : [],
+    overflowClaims:
+      typeof p.overflowClaims === 'number' ? p.overflowClaims : 0,
   };
 }
 

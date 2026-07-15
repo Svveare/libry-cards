@@ -191,20 +191,24 @@ export function ChestView({
           <div className={styles.openScene}>
             <TreasureChest open />
             <p className={styles.hint}>
-              {phase === 'picking' ? 'Выбери одну карту' : 'Открываем…'}
+              {phase === 'picking'
+                ? 'Выбери одну карту'
+                : 'Твой выбор · остальные — что могло выпасть'}
             </p>
           </div>
           <div
             className={`${styles.grid} ${pickedIndex !== null ? styles.gridPicked : ''}`}
           >
             {slots.map((slot, index) => {
-              const flipped = pickedIndex === index;
+              const revealAll = pickedIndex !== null;
+              const isPicked = pickedIndex === index;
+              const flipped = revealAll;
               if (slot.type === 'money') {
                 return (
                   <button
                     key={`m-${index}`}
                     type="button"
-                    className={`${styles.slot} ${flipped ? styles.picked : ''}`}
+                    className={`${styles.slot} ${isPicked ? styles.picked : ''} ${revealAll && !isPicked ? styles.alt : ''}`}
                     disabled={phase !== 'picking' || pickedIndex !== null}
                     onClick={() => handlePick(index)}
                     aria-label={
@@ -226,6 +230,9 @@ export function ChestView({
                       >
                         <span className={styles.initials}>+{slot.amount}</span>
                         <span className={styles.name}>Монеты</span>
+                        {revealAll && !isPicked ? (
+                          <span className={styles.rarity}>не выбрано</span>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -242,7 +249,7 @@ export function ChestView({
                 <button
                   key={`${card.id}-${index}`}
                   type="button"
-                  className={`${styles.slot} ${flipped ? styles.picked : ''}`}
+                  className={`${styles.slot} ${isPicked ? styles.picked : ''} ${revealAll && !isPicked ? styles.alt : ''}`}
                   disabled={phase !== 'picking' || pickedIndex !== null}
                   onClick={() => handlePick(index)}
                   aria-label={flipped ? name : `Слот ${index + 1}`}
@@ -260,7 +267,11 @@ export function ChestView({
                     >
                       <span className={styles.initials}>{initials}</span>
                       <span className={styles.name}>{name}</span>
-                      <span className={styles.rarity}>{rarityLabel}</span>
+                      <span className={styles.rarity}>
+                        {revealAll && !isPicked
+                          ? `${rarityLabel} · мимо`
+                          : rarityLabel}
+                      </span>
                     </div>
                   </div>
                 </button>

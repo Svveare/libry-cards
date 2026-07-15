@@ -166,7 +166,8 @@ export type GrantReward =
   | { kind: 'ink'; amount: number }
   | { kind: 'book'; amount: number }
   | { kind: 'bonusCase'; amount: number }
-  | { kind: 'cardRarity'; rarity: CardRarityRoll };
+  | { kind: 'cardRarity'; rarity: CardRarityRoll }
+  | { kind: 'choice'; options: Array<GrantReward | GrantReward[]> };
 
 export interface DayStats {
   day: string;
@@ -200,6 +201,8 @@ export interface BattlePassProgress {
   premium: boolean;
   claimedFree: number[];
   claimedPremium: number[];
+  /** Overflow XP rewards claimed past level cap (each BP_OVERFLOW_XP). */
+  overflowClaims: number;
 }
 
 export interface UserProgress {

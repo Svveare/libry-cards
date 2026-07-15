@@ -217,6 +217,13 @@
   z-index: 3;
   transform: scale(1.06) translateY(-4px);
   transition: transform 0.4s ease;
+  box-shadow: 0 0 0 2px var(--gold-bright), 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.alt {
+  opacity: 0.72;
+  transform: scale(0.96);
+  filter: saturate(0.85);
 }
 
 .dimmed {

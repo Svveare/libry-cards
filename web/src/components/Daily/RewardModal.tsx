@@ -114,11 +114,18 @@ function CardRevealBody({
             </h2>
             <span className={styles.rarity}>{RARITY_LABELS[card.rarity]}</span>
             <p className={styles.origin}>
-              Полка: {shelf?.name ?? '—'} · Книга: {book?.name ?? '—'}
+              {[shelf?.name, book?.name].filter(Boolean).join(' · ') ||
+                'Библиотека'}
             </p>
-            {card.description ? (
-              <p className={styles.description}>{card.description}</p>
-            ) : null}
+            {card.description?.trim() ? (
+              <p className={styles.description}>
+                {card.description.trim().length > 110
+                  ? `${card.description.trim().slice(0, 110)}…`
+                  : card.description.trim()}
+              </p>
+            ) : (
+              <p className={styles.description}>Подробнее — в библиотеке</p>
+            )}
           </div>
         </div>
         <Button fullWidth onClick={onClose}>

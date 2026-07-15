@@ -4,22 +4,22 @@ import { rollMoneyAmount } from './dailyRoll';
 import { inkForDupe } from './ink';
 import { pickWeighted } from './weighted';
 
-/** Free 48h chest: softer + money slots (~10%). */
+/** Free 48h chest: softer + money slots (~8%). */
 const FREE_WEIGHTS: { kind: Rarity; weight: number }[] = [
-  { kind: 'rare', weight: 45 },
-  { kind: 'epic', weight: 30 },
-  { kind: 'legendary', weight: 12 },
-  { kind: 'mythic', weight: 3 },
+  { kind: 'rare', weight: 50 },
+  { kind: 'epic', weight: 28 },
+  { kind: 'legendary', weight: 10 },
+  { kind: 'mythic', weight: 2 },
 ];
 
-const FREE_MONEY_SLOT_CHANCE = 0.1;
+const FREE_MONEY_SLOT_CHANCE = 0.08;
 
 /** Chest+: no money, stronger. */
 const PLUS_WEIGHTS: { kind: Rarity; weight: number }[] = [
-  { kind: 'rare', weight: 25 },
-  { kind: 'epic', weight: 35 },
-  { kind: 'legendary', weight: 30 },
-  { kind: 'mythic', weight: 10 },
+  { kind: 'rare', weight: 22 },
+  { kind: 'epic', weight: 38 },
+  { kind: 'legendary', weight: 32 },
+  { kind: 'mythic', weight: 8 },
 ];
 
 export type ChestSlot =

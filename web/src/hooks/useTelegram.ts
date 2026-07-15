@@ -131,7 +131,14 @@ export function useTelegram() {
     }
 
     syncSafeAreas(app);
-    const onLayout = () => syncSafeAreas(app);
+    const onLayout = () => {
+      try {
+        app.expand?.();
+      } catch {
+        // ignore
+      }
+      syncSafeAreas(app);
+    };
     try {
       app.onEvent?.('viewportChanged', onLayout);
       app.onEvent?.('safeAreaChanged', onLayout);

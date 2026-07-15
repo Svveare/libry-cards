@@ -7,6 +7,7 @@ import { TopBar } from './components/Home/TopBar';
 import { HomeMenu } from './components/Home/HomeMenu';
 import { Header } from './components/ui/Header';
 import { checkChannelSubscription } from './utils/checkSubscription';
+import { canOpenChest } from './utils/chestOpen';
 import { wasProgressWipedThisSession } from './utils/storage';
 import { useTelegram } from './hooks/useTelegram';
 import { useProgress } from './hooks/useProgress';
@@ -126,6 +127,7 @@ function App() {
     buyShopItem,
     ensureInkShop,
     buyInkCard,
+    buyInkSpend,
     applyReferralParam,
     applyServerBootstrap,
     replaceFromServer,
@@ -462,6 +464,8 @@ function App() {
                 rolledAt={progress.inkShopRolledAt}
                 onEnsureOffers={ensureInkShop}
                 onBuy={buyInkCard}
+                onBuyCatalog={buyInkSpend}
+                chestReady={canOpenChest(progress.lastChestOpenAt)}
                 onReward={(card) =>
                   setRevealedReward({ kind: 'card', card })
                 }
@@ -504,6 +508,7 @@ function App() {
               coins={progress.coins}
               bookTokens={progress.bookTokens}
               ink={progress.ink}
+              chestReady={canOpenChest(progress.lastChestOpenAt)}
               onBuy={buyShopItem}
               onCommitCase={commitPaidCase}
               onReward={setRevealedReward}

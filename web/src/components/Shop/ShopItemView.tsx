@@ -13,6 +13,8 @@ interface ShopItemViewProps {
   coins: number;
   bookTokens: number;
   ink: number;
+  /** When true, free chest is already ready — reset_chest is blocked. */
+  chestReady?: boolean;
   onBuy: (itemId: ShopItemId) => ShopBuyResult;
   onCommitCase: (reward: DailyReward, price: number, tier?: CaseTier) => void;
   onReward: (reward: DailyReward) => void;
@@ -35,6 +37,7 @@ export function ShopItemView({
   coins,
   bookTokens,
   ink,
+  chestReady = false,
   onBuy,
   onCommitCase,
   onReward,
@@ -48,6 +51,8 @@ export function ShopItemView({
 
   const isCase = item ? isCaseAction(item.action) : false;
   const isBook = item ? isBookAction(item.action) : false;
+  const isResetChest = item?.action === 'reset_chest';
+  const resetBlocked = isResetChest && chestReady;
 
   const { spinning, strip, startSpin, handleSpinEnd } = useCaseSpin({
     onCommit: (reward) =>
@@ -84,6 +89,10 @@ export function ShopItemView({
   const handleBuy = () => {
     if (spinning) return;
     setMessage(null);
+    if (resetBlocked) {
+      setMessage('Сундук уже доступен');
+      return;
+    }
 
     const result = onBuy(itemId);
     if (result.status === 'broke') {
@@ -137,18 +146,27 @@ export function ShopItemView({
         </div>
       ) : null}
 
-      <Button fullWidth disabled={spinning || !canAfford} onClick={handleBuy}>
+      <Button
+        fullWidth
+        disabled={spinning || !canAfford || resetBlocked}
+        onClick={handleBuy}
+      >
         {spinning
           ? 'Открывается…'
-          : canAfford
-            ? item.action === 'open_chest_plus'
-              ? 'Купить и открыть'
-              : item.action === 'reset_chest'
-                ? 'Сбросить ожидание'
-                : 'Купить'
-            : 'Недостаточно'}
+          : resetBlocked
+            ? 'Сундук уже доступен'
+            : canAfford
+              ? item.action === 'open_chest_plus'
+                ? 'Купить и открыть'
+                : item.action === 'reset_chest'
+                  ? 'Сбросить ожидание'
+                  : 'Купить'
+              : 'Недостаточно'}
       </Button>
 
+      {resetBlocked ? (
+        <p className="goldMessage">Сундук уже доступен — сброс не нужен</p>
+      ) : null}
       {message && <p className="goldMessage">{message}</p>}
     </section>
   );

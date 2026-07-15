@@ -13,11 +13,11 @@ const WEIGHTS: {
   kind: Exclude<DailyRewardKind, 'ink'>;
   weight: number;
 }[] = [
-  { kind: 'money', weight: 20 },
-  { kind: 'common', weight: 42 },
-  { kind: 'rare', weight: 22 },
-  { kind: 'epic', weight: 10 },
-  { kind: 'legendary', weight: 4 },
+  { kind: 'money', weight: 15 },
+  { kind: 'common', weight: 47 },
+  { kind: 'rare', weight: 24 },
+  { kind: 'epic', weight: 9 },
+  { kind: 'legendary', weight: 3 },
   { kind: 'book', weight: 2 },
 ];
 
@@ -28,24 +28,24 @@ const CASE_WEIGHTS: Record<
   { kind: NoMoneyKind; weight: number }[]
 > = {
   soft: [
-    { kind: 'common', weight: 35 },
-    { kind: 'rare', weight: 40 },
-    { kind: 'epic', weight: 18 },
-    { kind: 'legendary', weight: 5 },
-    { kind: 'book', weight: 2 },
+    { kind: 'common', weight: 40 },
+    { kind: 'rare', weight: 42 },
+    { kind: 'epic', weight: 14 },
+    { kind: 'legendary', weight: 3 },
+    { kind: 'book', weight: 1 },
   ],
   mid: [
     { kind: 'common', weight: 22 },
-    { kind: 'rare', weight: 40 },
-    { kind: 'epic', weight: 25 },
+    { kind: 'rare', weight: 38 },
+    { kind: 'epic', weight: 28 },
     { kind: 'legendary', weight: 10 },
-    { kind: 'book', weight: 3 },
+    { kind: 'book', weight: 2 },
   ],
   hot: [
-    { kind: 'common', weight: 10 },
-    { kind: 'rare', weight: 30 },
-    { kind: 'epic', weight: 35 },
-    { kind: 'legendary', weight: 22 },
+    { kind: 'common', weight: 8 },
+    { kind: 'rare', weight: 28 },
+    { kind: 'epic', weight: 36 },
+    { kind: 'legendary', weight: 25 },
     { kind: 'book', weight: 3 },
   ],
 };

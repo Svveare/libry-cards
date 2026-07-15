@@ -19,6 +19,12 @@ function pickUncollectedOfRarity(
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
 }
 
+export function normalizeGrantOption(
+  opt: GrantReward | GrantReward[],
+): GrantReward[] {
+  return Array.isArray(opt) ? opt : [opt];
+}
+
 export function formatGrantReward(reward: GrantReward): string {
   switch (reward.kind) {
     case 'coins':
@@ -38,6 +44,8 @@ export function formatGrantReward(reward: GrantReward): string {
       };
       return labels[reward.rarity];
     }
+    case 'choice':
+      return 'выбор награды';
   }
 }
 
@@ -59,6 +67,9 @@ export function applyGrant(
 }
 
 function applyOne(prev: UserProgress, reward: GrantReward): UserProgress {
+  if (reward.kind === 'choice') {
+    return prev;
+  }
   const next = { ...prev };
   if (reward.kind === 'coins') {
     next.coins = prev.coins + reward.amount;

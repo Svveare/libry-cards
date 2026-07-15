@@ -78,7 +78,7 @@
         "categoryId": "cases",
         "title": "Кейс Soft",
         "description": "Лёгкая рулетка",
-        "price": 90,
+        "price": 80,
         "action": "case_soft"
       },
       {
@@ -86,7 +86,7 @@
         "categoryId": "cases",
         "title": "Кейс Mid",
         "description": "Больше редких",
-        "price": 120,
+        "price": 110,
         "action": "case_mid"
       },
       {
@@ -94,7 +94,7 @@
         "categoryId": "cases",
         "title": "Кейс Hot",
         "description": "Жирный шанс на легенду",
-        "price": 180,
+        "price": 170,
         "action": "case_hot"
       },
       {

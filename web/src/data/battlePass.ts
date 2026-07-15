@@ -4,6 +4,8 @@ export const BATTLE_PASS_LEVELS = 30;
 export const BATTLE_PASS_XP_PER_LEVEL = 100;
 /** Reachable mid-month; Pro sells cards/cases, not a coin printer. */
 export const BATTLE_PASS_PREMIUM_PRICE = 1000;
+/** XP past season cap between overflow rewards. */
+export const BP_OVERFLOW_XP = 500;
 
 export const BP_XP = {
   /** Default XP when claiming a simple quest. Hard/midday use quest.xp. */
@@ -35,6 +37,11 @@ function cases(amount: number): GrantReward {
 function card(rarity: 'common' | 'rare' | 'epic' | 'legendary'): GrantReward {
   return { kind: 'cardRarity', rarity };
 }
+function choice(
+  ...options: Array<GrantReward | GrantReward[]>
+): GrantReward {
+  return { kind: 'choice', options };
+}
 
 /** UTC month key, e.g. 2026-07 — season resets on the 1st. */
 export function currentBattlePassSeasonId(date = new Date()): string {
@@ -65,14 +72,25 @@ function buildLevel(level: number): BattlePassLevelDef {
       level,
       tier,
       free: [card('legendary'), cases(2), coins(120), ink(18), book(1)],
-      premium: [
-        card('legendary'),
-        card('epic'),
-        cases(3),
-        coins(200),
-        ink(28),
-        book(2),
-      ],
+      premium: choice(cases(5), [card('legendary'), coins(200)]),
+    };
+  }
+
+  if (level === 15) {
+    return {
+      level,
+      tier,
+      free: [cases(1), coins(40), ink(8)],
+      premium: choice(cases(2), card('epic')),
+    };
+  }
+
+  if (level === 25) {
+    return {
+      level,
+      tier,
+      free: [cases(1), coins(40), ink(8)],
+      premium: choice(cases(3), card('legendary')),
     };
   }
 
@@ -158,6 +176,18 @@ export function xpToNextLevel(xp: number): number {
   return BATTLE_PASS_XP_PER_LEVEL - xpIntoLevel(xp);
 }
 
+const BP_MAX_XP = BATTLE_PASS_LEVELS * BATTLE_PASS_XP_PER_LEVEL;
+
+export function overflowXpBanked(xp: number): number {
+  return Math.max(0, xp - BP_MAX_XP);
+}
+
+export function overflowXpToNext(xp: number, claims: number): number {
+  const banked = overflowXpBanked(xp);
+  const nextAt = (claims + 1) * BP_OVERFLOW_XP;
+  return Math.max(0, nextAt - banked);
+}
+
 export function defaultBattlePassProgress(date = new Date()) {
   return {
     seasonId: currentBattlePassSeasonId(date),
@@ -165,5 +195,6 @@ export function defaultBattlePassProgress(date = new Date()) {
     premium: false,
     claimedFree: [] as number[],
     claimedPremium: [] as number[],
+    overflowClaims: 0,
   };
 }

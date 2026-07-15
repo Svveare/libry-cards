@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import type { Card } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import { getBookById, getShelfById } from '../../content/loader';
@@ -21,6 +21,20 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
     card.description?.trim() ||
     'Описание пока пустое — его можно задать в админке.';
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const layout = document.querySelector(
+      '[data-app-layout]',
+    ) as HTMLElement | null;
+    const prevLayout = layout?.style.overflow ?? '';
+    if (layout) layout.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+      if (layout) layout.style.overflow = prevLayout;
+    };
+  }, []);
+
   return (
     <div className={styles.overlay} onClick={onClose} role="presentation">
       <div
@@ -40,24 +54,26 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
           ×
         </button>
 
-        <div className={styles.hero}>
-          {showImage ? (
-            <img
-              src={card.image}
-              alt={card.name}
-              className={styles.heroImage}
-              onError={() => setImgFailed(true)}
-            />
-          ) : (
-            <span className={styles.heroInitials}>
-              {getCardInitials(card.name)}
-            </span>
-          )}
-          <div className={styles.heroShade}>
-            <p className={styles.rarity}>{RARITY_LABELS[card.rarity]}</p>
-            <h2 id="card-detail-title" className={styles.title}>
-              {card.name}
-            </h2>
+        <div className={styles.cardStage}>
+          <div className={styles.cardFrame}>
+            {showImage ? (
+              <img
+                src={card.image}
+                alt={card.name}
+                className={styles.heroImage}
+                onError={() => setImgFailed(true)}
+              />
+            ) : (
+              <span className={styles.heroInitials}>
+                {getCardInitials(card.name)}
+              </span>
+            )}
+            <div className={styles.heroShade}>
+              <p className={styles.rarity}>{RARITY_LABELS[card.rarity]}</p>
+              <h2 id="card-detail-title" className={styles.title}>
+                {card.name}
+              </h2>
+            </div>
           </div>
         </div>
 
@@ -66,7 +82,9 @@ export function CardDetailModal({ card, onClose }: CardDetailModalProps) {
             {[shelf?.name, book?.name].filter(Boolean).join(' · ') ||
               'Библиотека'}
           </p>
-          <p className={styles.description}>{description}</p>
+          <div className={styles.descScroll}>
+            <p className={styles.description}>{description}</p>
+          </div>
           <Button fullWidth onClick={onClose}>
             Закрыть
           </Button>

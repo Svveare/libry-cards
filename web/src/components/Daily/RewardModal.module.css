@@ -21,7 +21,7 @@
 
 .modal {
   width: 100%;
-  max-width: 328px;
+  max-width: 340px;
   animation: modalIn var(--motion-modal) var(--ease-out);
 }
 
@@ -112,12 +112,16 @@
   background: #0c0a08;
   border: 1px solid color-mix(in srgb, var(--card-rarity) 70%, var(--gold));
   overflow: hidden;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   position: relative;
   isolation: isolate;
   animation: cardReveal 0.4s var(--ease-out) both;
+  width: min(100%, 300px);
+  margin-left: auto;
+  margin-right: auto;
+  height: min(58vh, 480px);
   aspect-ratio: 3 / 4;
-  max-height: 420px;
+  max-height: min(58vh, 480px);
 }
 
 @keyframes cardReveal {
@@ -239,9 +243,13 @@
 
 .description {
   margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--text-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
