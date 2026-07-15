@@ -96,9 +96,9 @@ function requireContent(): ContentData {
   return content;
 }
 
-/** Apply Bothost card overrides (server wins over local overlay fields). */
+/** Apply Bothost card overrides (merge — server fields patch existing map). */
 export function applyCardOverrides(overrides: Record<string, CardOverride>): void {
-  serverOverrides = { ...overrides };
+  serverOverrides = { ...serverOverrides, ...overrides };
   if (!baseContent) return;
   const overlay = loadContentOverlay();
   const withLocal = overlay ? structuredClone(overlay) : structuredClone(baseContent);

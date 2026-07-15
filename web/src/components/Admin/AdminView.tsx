@@ -101,19 +101,25 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
     if (img.startsWith('data:')) {
       return {
         kind: 'overlay' as const,
-        text: 'в оверлее (только на этом устройстве)',
+        text: 'локальный превью — пока не уйдёт на Bothost, видишь только ты',
+      };
+    }
+    if (img.includes('bothost.tech') || img.includes('/media/cards/')) {
+      return {
+        kind: 'server' as const,
+        text: 'на сервере Bothost — доступно всем после входа в Mini App',
       };
     }
     if (img.startsWith('/cards/')) {
       return {
         kind: 'path' as const,
-        text: `путь ${img} — файл должен лежать в public/cards/ на сервере`,
+        text: `путь ${img} — файл должен лежать в public/cards/ на Vercel`,
       };
     }
     if (img.startsWith('https://') || img.startsWith('http://')) {
       return {
         kind: 'url' as const,
-        text: 'внешний URL (должен открываться как картинка)',
+        text: 'внешний URL (должен открываться как картинка у всех)',
       };
     }
     return {
@@ -288,12 +294,21 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
       });
       setSaveBusy(false);
       if (res.ok) {
-        const serverImage = res.image ?? imageValue;
-        if (res.image && res.image !== imageValue) {
-          const withUrl = updateCard(next, cardId, { image: res.image });
-          persist(withUrl);
-          setDraft((d) => ({ ...d, cardImage: res.image! }));
+        const serverImage = res.image?.startsWith('http')
+          ? res.image
+          : imageValue.startsWith('http')
+            ? imageValue
+            : '';
+        if (!serverImage) {
+          setShowDeployChecklist(true);
+          setNote(
+            'Сервер ответил без публичного URL картинки. Проверь PUBLIC_BASE на Bothost.',
+          );
+          return;
         }
+        const withUrl = updateCard(next, cardId, { image: serverImage });
+        persist(withUrl);
+        setDraft((d) => ({ ...d, cardImage: serverImage }));
         applyCardOverrides({
           [cardId]: {
             name: draft.cardName.trim() || '—',
@@ -344,7 +359,11 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
     const res = await pushCardToServer(card.id, fields);
     setSaveBusy(false);
     if (res.ok) {
-      const serverImage = res.image ?? image;
+      const serverImage = res.image?.startsWith('http')
+        ? res.image
+        : image.startsWith('http')
+          ? image
+          : image;
       if (res.image && res.image !== image) {
         const withUrl = updateCard(next, card.id, { image: res.image });
         persist(withUrl);
@@ -359,9 +378,15 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
         },
       });
       setShowDeployChecklist(false);
-      setNote(
-        'Сохранено на сервере — у всех игроков после перезахода / следующего входа',
-      );
+      if (image.startsWith('data:') && !res.image?.startsWith('http')) {
+        setNote(
+          'Текст сохранён, но публичного URL картинки нет — проверь PUBLIC_BASE на Bothost.',
+        );
+      } else {
+        setNote(
+          'Сохранено на сервере — у всех игроков после перезахода / следующего входа',
+        );
+      }
     } else {
       setShowDeployChecklist(true);
       setNote(
@@ -792,11 +817,15 @@ export function AdminView({ onBack, initData, userId }: AdminViewProps) {
                     <span>Описание</span>
                     <textarea
                       value={draft.cardDesc}
-                      rows={3}
+                      rows={4}
+                      placeholder="Лор карты — видно при тапе на карту в библиотеке"
                       onChange={(e) =>
                         setDraft((d) => ({ ...d, cardDesc: e.target.value }))
                       }
                     />
+                    <span className={styles.hint}>
+                      Показывается в большом просмотре карты у всех игроков.
+                    </span>
                   </label>
                   <div className={styles.imageBlock}>
                     <p className={styles.imageTitle}>Картинка с устройства</p>

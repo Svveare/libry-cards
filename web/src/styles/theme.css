@@ -1,28 +1,28 @@
 :root {
   /* Oil night library — richer charcoal + luminous brass */
-  --bg-deep: #080706;
-  --bg-mid: #14110e;
-  --surface: #1e1914;
-  --surface-hover: #29231c;
-  --surface-raised: #322a21;
-  --wood: #3a2418;
-  --wood-light: #5a3824;
-  --lamp: #ffd89a;
-  --gold: #e0b84a;
-  --gold-bright: #ffe8a8;
-  --gold-dim: #a07828;
-  --text: #faf6ee;
-  --text-muted: #a89e90;
-  --text-soft: #d4c9b8;
-  --border: rgba(224, 184, 74, 0.16);
-  --border-strong: rgba(224, 184, 74, 0.42);
+  --bg-deep: #090705;
+  --bg-mid: #18140f;
+  --surface: #261f18;
+  --surface-hover: #322920;
+  --surface-raised: #3a3126;
+  --wood: #4a2e1c;
+  --wood-light: #6e4528;
+  --lamp: #ffe2a8;
+  --gold: #efc35a;
+  --gold-bright: #fff0b8;
+  --gold-dim: #b88830;
+  --text: #fffaf0;
+  --text-muted: #b8ad9c;
+  --text-soft: #e4d8c4;
+  --border: rgba(239, 195, 90, 0.22);
+  --border-strong: rgba(255, 240, 184, 0.48);
 
-  --rarity-common: #d2c8b8;
-  --rarity-rare: #5ea0ef;
-  --rarity-epic: #c070f0;
-  --rarity-legendary: #f0c450;
-  --rarity-mythic: #f078b0;
-  --rarity-secret: #3fd4bc;
+  --rarity-common: #e8dfd0;
+  --rarity-rare: #6eb4ff;
+  --rarity-epic: #d08aff;
+  --rarity-legendary: #ffd45c;
+  --rarity-mythic: #ff8ec0;
+  --rarity-secret: #4ef0d4;
 
   --font-display: 'Fraunces', 'Georgia', serif;
   --font-ui: 'Nunito Sans', system-ui, sans-serif;
@@ -39,15 +39,15 @@
   --space-5: 20px;
   --space-6: 28px;
 
-  --shadow-gold: 0 12px 40px rgba(224, 184, 74, 0.32);
+  --shadow-gold: 0 12px 44px rgba(239, 195, 90, 0.4);
   --shadow-card: 0 16px 42px rgba(0, 0, 0, 0.55);
-  --shadow-shelf: inset 0 1px 0 rgba(255, 232, 168, 0.08);
+  --shadow-shelf: inset 0 1px 0 rgba(255, 240, 184, 0.12);
 
   --ease-out: cubic-bezier(0.25, 0.9, 0.3, 1);
   --ease-spin: cubic-bezier(0.12, 0.7, 0.16, 1);
   --press: scale(0.985);
 
-  --grain-opacity: 0.035;
+  --grain-opacity: 0.022;
   --motion-view: 0.38s;
   --motion-brand: 0.45s;
   --motion-row: 0.42s;

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Card } from '../../types';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types';
 import styles from './CardSlot.module.css';
@@ -6,6 +6,7 @@ import styles from './CardSlot.module.css';
 interface CardSlotProps {
   card: Card;
   collected: boolean;
+  onSelect?: (card: Card) => void;
 }
 
 function getInitials(name: string): string {
@@ -21,7 +22,7 @@ export function getCardInitials(name: string): string {
   return getInitials(name);
 }
 
-export function CardSlot({ card, collected }: CardSlotProps) {
+export function CardSlot({ card, collected, onSelect }: CardSlotProps) {
   const [imgFailed, setImgFailed] = useState(false);
 
   if (!collected) {
@@ -30,17 +31,35 @@ export function CardSlot({ card, collected }: CardSlotProps) {
 
   const color = RARITY_COLORS[card.rarity];
   const showImage = Boolean(card.image) && !imgFailed;
+  const interactive = Boolean(onSelect);
+
+  const open = () => onSelect?.(card);
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      open();
+    }
+  };
 
   return (
     <article
-      className={styles.card}
+      className={`${styles.card} ${interactive ? styles.cardInteractive : ''}`}
       style={{ '--card-rarity': color } as CSSProperties}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={interactive ? open : undefined}
+      onKeyDown={onKeyDown}
+      aria-label={
+        interactive ? `${card.name}, ${RARITY_LABELS[card.rarity]}` : undefined
+      }
     >
       <div className={styles.art}>
         {showImage ? (
           <img
             src={card.image}
-            alt={card.name}
+            alt=""
             className={styles.image}
             loading="lazy"
             decoding="async"

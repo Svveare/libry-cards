@@ -1,7 +1,10 @@
+import { useState } from 'react';
+import type { Card } from '../../types';
 import { getBookById, getShelfById, getBookProgress } from '../../content/loader';
 import { RARITY_LABELS } from '../../types';
 import { Header } from '../ui/Header';
 import { CardSlot } from './CardSlot';
+import { CardDetailModal } from './CardDetailModal';
 import styles from './BookView.module.css';
 
 interface BookViewProps {
@@ -11,6 +14,7 @@ interface BookViewProps {
 }
 
 export function BookView({ bookId, collectedSet, onBack }: BookViewProps) {
+  const [selected, setSelected] = useState<Card | null>(null);
   const book = getBookById(bookId);
   if (!book) return null;
 
@@ -27,6 +31,7 @@ export function BookView({ bookId, collectedSet, onBack }: BookViewProps) {
           {collected}/{total} карточек
         </span>
       </div>
+      <p className={styles.hint}>Нажми на карту, чтобы открыть крупнее</p>
 
       <div className={styles.pages}>
         {pages.map((page) => {
@@ -53,6 +58,9 @@ export function BookView({ bookId, collectedSet, onBack }: BookViewProps) {
                     key={card.id}
                     card={card}
                     collected={collectedSet.has(card.id)}
+                    onSelect={
+                      collectedSet.has(card.id) ? setSelected : undefined
+                    }
                   />
                 ))}
               </div>
@@ -60,6 +68,10 @@ export function BookView({ bookId, collectedSet, onBack }: BookViewProps) {
           );
         })}
       </div>
+
+      {selected ? (
+        <CardDetailModal card={selected} onClose={() => setSelected(null)} />
+      ) : null}
     </div>
   );
 }

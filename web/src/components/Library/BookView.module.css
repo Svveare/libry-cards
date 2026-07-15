@@ -27,6 +27,14 @@
   color: var(--text-muted);
 }
 
+.hint {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--text-soft);
+  text-align: center;
+  opacity: 0.9;
+}
+
 .pages {
   display: flex;
   flex-direction: column;

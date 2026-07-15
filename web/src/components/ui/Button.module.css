@@ -39,13 +39,18 @@
 }
 
 .primary:hover:not(:disabled) {
-  box-shadow: 0 14px 40px rgba(224, 184, 74, 0.42);
+  box-shadow: 0 14px 48px rgba(239, 195, 90, 0.52);
 }
 
 .secondary {
-  background: var(--surface);
+  background: var(--surface-raised);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--gold-bright) 55%, transparent);
+  background: var(--surface-hover);
 }
 
 .ghost {

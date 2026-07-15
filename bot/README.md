@@ -10,7 +10,7 @@ Python-бот + HTTP API. Корень репозитория специальн
 |------------|--------|----------|
 | `BOT_TOKEN` | от BotFather | обязателен |
 | `WEBAPP_URL` | `https://libry-cards.vercel.app` | Mini App на Vercel |
-| `PUBLIC_BASE` | `https://bot-….bothost.tech` | публичный HTTPS этого бота |
+| `PUBLIC_BASE` | `https://bot-1784140664-7190-svveare.bothost.tech` | **обязателен** — иначе картинки карт не открываются у других игроков |
 | `ADMIN_IDS` | `1920121195` | через запятую |
 | `REFERRAL_BONUS` | `25` | монеты приглашённому |
 | `PORT` | `3000` | порт HTTP |
